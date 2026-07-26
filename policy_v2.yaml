@@ -1,0 +1,4 @@
+name: projects/seanjung-poc/policies/iam.allowedPolicyMemberDomains
+spec:
+  rules:
+  - allowAll: true

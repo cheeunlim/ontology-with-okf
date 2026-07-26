@@ -1,0 +1,38 @@
+# Logs
+logs
+*.log
+server.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment & Credentials
+.env
+.env.*
+*.env
+*key*.json
+credentials.json
+service-account*.json
+
+# Build & Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temp & Scratch
+temp/
+scratch/
