@@ -1,12 +1,30 @@
-# OKF Omni: AI-Driven Enterprise Ontology Platform
+# 🌐 OKF Omni: AI-Driven Enterprise Ontology Platform
+
+[![Live Demo](https://img.shields.io/badge/🚀_Cloud_Run_Live_Demo-Click_to_Launch-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://okf-omni-924723860007.us-central1.run.app/)
+[![Gemini Model](https://img.shields.io/badge/AI_Engine-Gemini_3.5_Flash-34A853?style=for-the-badge&logo=googlegemini&logoColor=white)](./GEMINI.md)
+[![Dataplex Ready](https://img.shields.io/badge/Catalog-GCP_Dataplex_Aspects-EA4335?style=for-the-badge&logo=googlecloud&logoColor=white)](./docs/USER_GUIDE.md)
 
 **OKF Omni**는 엔터프라이즈의 데이터 메타데이터(BigQuery 스키마, DDL)와 비정형 비즈니스 지식(사내 가이드라인, 위키 문서, 정책 PDF)을 유기적으로 융합하여 상호 참조 온톨로지(Ontology)를 구축하고 지능형 데이터 분석을 지원하는 플랫폼입니다.
 
-> 📚 **주요 가이드 바로가기 (Quick Links)**
-> - 📘 **[사용자 가이드 (User Guide)](./docs/USER_GUIDE.md)**: 기능별 사용법 및 5단계 추론 Provenance 활용법
-> - 🛠️ **[개발자 가이드 (Developer Guide)](./docs/DEVELOPER_GUIDE.md)**: 아키텍처 스택, API 명세, 로컬 실행 & Cloud Run 배포 가이드
-> - 🎨 **[디자인 시스템 명세서](./Design.md)**: UI 디자인 철학, 글로벌 5대 탭 및 컬러 토큰
-> - 🤖 **[Gemini AI 연동 스펙](./GEMINI.md)**: Gemini 3.5 Flash 모델 규격, 생각 흐름 파싱 & 방어적 프로그래밍 수칙
+---
+
+## ⚡ 1-Click Live Demo 체험하기
+아래 버튼을 클릭하면 Google Cloud Run 환경에 실시간으로 배포되어 동작하는 **OKF Omni 라이브 플랫폼**을 바로 체험하실 수 있습니다.
+
+[![Launch Demo App](https://img.shields.io/badge/👉_https://okf--omni--924723860007.us--central1.run.app/-ENTER_PLATFORM-FF6F00?style=for-the-badge&logo=googlechrome&logoColor=white)](https://okf-omni-924723860007.us-central1.run.app/)
+
+---
+
+## 📚 주요 문서 & 가이드 바로가기 (Quick Navigation)
+
+| 구분 | 문서 제목 | 상세 설명 |
+| :--- | :--- | :--- |
+| 📘 **사용자** | **[docs/USER_GUIDE.md](./docs/USER_GUIDE.md)** | 5대 메인 탭 활용법, 5단계 추론 Provenance 워크플로우 & FAQ |
+| 🛠️ **개발자** | **[docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)** | 시스템 기술 스택, 백엔드 API 규격, 방어적 코드 수칙 & 배포 가이드 |
+| 🎨 **디자인** | **[Design.md](./Design.md)** | UI 디자인 철학, 글로벌 5대 탭 및 디자인 토큰 |
+| 🤖 **AI 스펙** | **[GEMINI.md](./GEMINI.md)** | Gemini 3.5 Flash 모델 사양, 생각 흐름(`thought`) 추출 & 용어 수칙 |
+| 🏛️ **아키텍처**| **[docs/architecture/](./docs/architecture/)** | 전체 시스템 구성도 (`ARCHITECTURE_&_ROADMAP.md`) |
+| 📋 **세부 스펙**| **[docs/specifications/](./docs/specifications/)** | 검증 체크리스트 및 백링크/LLM-Wiki 설계 제안서 |
 
 ---
 
@@ -42,48 +60,45 @@ graph TD
 
 ---
 
-## 📝 핵심 프롬프트의 역할 (Prompt Specifications)
+## 📝 핵심 프롬프트 소스 관리 (Single Source of Truth)
 
-각 비즈니스 흐름 단계에서 동작하는 프롬프트 명세서입니다. 모든 프롬프트 소스코드는 [agentPrompts.js](./prompts/agentPrompts.js)에서 단일 소스로 관리됩니다.
+모든 AI 프롬프트 소스코드는 [prompts/agentPrompts.js](./prompts/agentPrompts.js)에서 단일 소스로 관리됩니다.
 
-1. **지식 해체 프롬프트 (`getLlmWikiDecomposePrompt`)**
-   * 비정형 문서에서 핵심 개념과 물리 테이블 매핑 용어를 분해하여 3계층 위키 문서 양식으로 분류 및 합성합니다.
-2. **지식 보강 프롬프트 (`getEnrichmentPrompt`)**
-   * 테이블 스키마 구조에 사내 위키 룰셋을 주입하여 컬럼 설명을 보강하고 테이블 간 이중 백링크 관계를 형성합니다.
-3. **하이브리드 전략 판별 프롬프트 (`getSqlGenerationPrompt`)**
-   * 자연어 질의를 분석하여 SQL 통계 및 GQL 관계 추적 쿼리를 병렬 도출하고, BigQuery 예약어 충돌 방지를 위한 백틱(`) 이스케이프 처리를 주입합니다.
-4. **최종 리포트 합성 프롬프트 (`getFinalAnswerPrompt`)**
-   * SQL 결과 레코드, GQL 그래프 관계 데이터, 그리고 GCS 위키 지식을 결합하여 검증 정보 인용구가 포함된 보고서를 한국어 또는 영어로 최종 편집합니다.
+1. **지식 해체 프롬프트 (`getLlmWikiDecomposePrompt`)**: 비정형 문서에서 핵심 개념과 물리 테이블 매핑 용어를 분해하여 3계층 위키 양식으로 분류 및 합성합니다.
+2. **지식 보강 프롬프트 (`getEnrichmentPrompt`)**: 테이블 스키마 구조에 사내 위키 룰셋을 주입하여 컬럼 설명을 보강하고 테이블 간 이중 백링크 관계를 형성합니다.
+3. **하이브리드 전략 판별 프롬프트 (`getSqlGenerationPrompt`)**: 자연어 질의를 분석하여 SQL 통계 및 GQL 관계 추적 쿼리를 병렬 도출하고, 예약어 충돌 방지를 위한 백틱(`) 이스케이프 처리를 주입합니다.
+4. **최종 리포트 합성 프롬프트 (`getFinalAnswerPrompt`)**: SQL 결과 레코드, GQL 그래프 관계 데이터, GCS 위키 지식을 결합하여 검증 정보 인용구가 포함된 보고서를 최종 편집합니다.
 
 ---
 
 ## 📂 리포지토리 구성 가이드 (Directory Index)
 
-### 🖥️ Frontend Layer
-* [src/App.jsx](./src/App.jsx) - 리액트 프론트엔드 어플리케이션. 8개 탭 상태 관리, Aspects Diff 및 5단계 추론Provenace 추적 뷰어 렌더링.
-* [src/App.css](./src/App.css) - 다크 모드, Glassmorphism, 탭 및 리스트 트랜지션 애니메이션 스타일 정의.
+루트 디렉토리는 핵심 안내서 위주로 깔끔하게 구성되어 있으며, 세부 기능은 하위 디렉토리에서 확인하실 수 있습니다.
 
-### ⚙️ Orchestration Backend Layer
-* [server.js](./server.js) - Express 백엔드 API 게이트웨이. BigQuery, GCS I/O 처리 및 AI 에이전트 다단계 실행 흐름 통제.
-* [start_server.sh](./start_server.sh) - 백엔드 서버(Port 3003) 자동 재기동 감시 프로세스.
-* [tools/gcpTools.js](./tools/gcpTools.js) - GCP Client SDK (BigQuery, GCS) 래퍼.
-
-### 🤖 AI Core Layer
-* [agents/geminiAgent.js](./agents/geminiAgent.js) - Gemini 3.5 Flash 호출 클라이언트(다중 인증 지원) 및 생각 흐름(`thought`) 수집 모듈. 로컬 Python Reference Agent 비동기 실행 위임.
-* [prompts/agentPrompts.js](./prompts/agentPrompts.js) - AI 에이전트 프롬프트 템플릿 통합 관리소 (SSOT).
-
-### 📖 Specifications & Guides
-* [docs/USER_GUIDE.md](./docs/USER_GUIDE.md) - 플랫폼 사용 가이드 및 5단계 추론 Provenance 활용법.
-* [docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md) - 시스템 기술 아키텍처, API 명세 및 Cloud Run 배포 가이드.
-* [Design.md](./Design.md) - UI 디자인 가이드 및 컬러 토큰.
-* [GEMINI.md](./GEMINI.md) - AI 에이전트 연동 가이드라인, 언어 규칙, 데이터 타입 예외 처리 명세서.
+```
+ontology-with-okf/
+├── docs/                        # 📖 모든 플랫폼 상세 문서 및 가이드 모음
+│   ├── USER_GUIDE.md            # 사용자 기능 사용 가이드 & FAQ
+│   ├── DEVELOPER_GUIDE.md       # 개발자 시스템 기술 스택 & 배포 가이드
+│   ├── architecture/            # 시스템 구성도 및 로드맵 문서
+│   ├── specifications/          # 백링크/GQL 설계 제안서 및 검증 스펙
+│   └── okf-templates/           # 사내 위키 템플릿 샘플 모음
+├── src/                         # 🖥️ React 프론트엔드 어플리케이션 소스
+├── agents/                      # 🤖 Gemini 3.5 Flash 호출 모듈 (geminiAgent.js)
+├── prompts/                     # 📝 AI 프롬프트 단일 관리소 (agentPrompts.js)
+├── tools/                       # ⚙️ GCP Client SDK (BigQuery, GCS) 래퍼 (gcpTools.js)
+├── Design.md                    # 🎨 UI 디자인 시스템 명세서
+├── GEMINI.md                    # 🤖 Gemini 연동 규격 & 방어적 프로그래밍 수칙
+├── Dockerfile                   # 🐳 Cloud Run 배포용 Dockerfile
+├── server.js                    # ⚙️ Express API 게이트웨이 백엔드 (Port 3003)
+└── README.md                    # 🌐 최상단 개요 & Quick Links (본 문서)
+```
 
 ---
 
 ## 🚀 로컬 실행 방법 (Port: 3003)
 
 ### 1. GCP 로그인 및 ADC 설정
-BigQuery 및 GCS 연동을 위해 권한 부여가 필요합니다.
 ```bash
 gcloud auth login
 gcloud auth application-default login
@@ -97,6 +112,6 @@ npm install
 # 프론트엔드 프로덕션 에셋 빌드
 npm run build
 
-# 백엔드 통합 API 서버 기동 (localhost:3003 접속)
+# 백엔드 통합 API 서버 기동 (http://localhost:3003 접속)
 node server.js
 ```
