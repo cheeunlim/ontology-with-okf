@@ -8,31 +8,50 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment & Credentials
+# Environment & Sensitive Credentials (Zero-Leak Policy)
 .env
 .env.*
 *.env
 *key*.json
-credentials.json
+credentials*.json
 service-account*.json
+*.pem
+*.key
+*.cert
+*.p12
+
+# Python Virtual Environments & Bytecode
+.venv
+**/.venv
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
 
 # Build & Dependencies
-node_modules
-dist
-dist-ssr
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
 *.local
 
 # Editor & OS files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+**/.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Temp & Scratch
+# Temp & Scratch & Duplicates
 temp/
+**/temp/
+temp_okf_*
 scratch/
+srcs/references/

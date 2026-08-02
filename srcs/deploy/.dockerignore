@@ -1,0 +1,13 @@
+# Node.js & Tooling
+node_modules
+npm-debug.log
+.DS_Store
+.git
+.gitignore
+
+# Scratch & Temporary Analysis
+scratch/
+test_okf_out/
+test_okf_korean/
+.pytest_cache/
+references/knowledge-catalog/okf/.venv/

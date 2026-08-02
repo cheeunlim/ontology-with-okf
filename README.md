@@ -1,10 +1,11 @@
-# 🌐 OKF Omni: AI-Driven Enterprise Ontology Platform
+# 🌐 OKF Omni: Enterprise Ontology Integration Platform
 
 [![Live Demo](https://img.shields.io/badge/🚀_Cloud_Run_Live_Demo-Click_to_Launch-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://okf-omni-924723860007.us-central1.run.app/)
-[![Gemini Model](https://img.shields.io/badge/AI_Engine-Gemini_3.5_Flash-34A853?style=for-the-badge&logo=googlegemini&logoColor=white)](./GEMINI.md)
-[![Dataplex Ready](https://img.shields.io/badge/Catalog-GCP_Dataplex_Aspects-EA4335?style=for-the-badge&logo=googlecloud&logoColor=white)](./docs/USER_GUIDE.md)
+[![Project Master](https://img.shields.io/badge/Master_Spec-prod.md-FF6F00?style=for-the-badge&logo=markdown&logoColor=white)](./prod.md)
+[![Agent Spec](https://img.shields.io/badge/AI_Engine-AGENT.md-34A853?style=for-the-badge&logo=googlegemini&logoColor=white)](./AGENT.md)
+[![Design System](https://img.shields.io/badge/Design_System-DESIGN.md-9333EA?style=for-the-badge&logo=figma&logoColor=white)](./DESIGN.md)
 
-**OKF Omni**는 엔터프라이즈의 데이터 메타데이터(BigQuery 스키마, DDL)와 비정형 비즈니스 지식(사내 가이드라인, 위키 문서, 정책 PDF)을 유기적으로 융합하여 상호 참조 온톨로지(Ontology)를 구축하고 지능형 데이터 분석을 지원하는 플랫폼입니다.
+**OKF Omni**는 엔터프라이즈의 정형 데이터 메타데이터(BigQuery 스키마, DDL, Property Graph)와 비정형 비즈니스 지식(사내 가이드라인, 위키 문서, 정책 PDF)을 유기적으로 융합하여 상호 참조 온톨로지(Ontology)를 구축하고 지능형 데이터 분석(GQL/SQL/RAG)을 지원하는 플랫폼입니다.
 
 ---
 
@@ -15,103 +16,91 @@
 
 ---
 
-## 📚 주요 문서 & 가이드 바로가기 (Quick Navigation)
+## 🏛️ 프로젝트 마스터 문서 체계 (Architecture & Documentation System)
 
-| 구분 | 문서 제목 | 상세 설명 |
+본 프로젝트는 요구사항, 사양, 소스 코드, 외부 레퍼런스가 엄격히 분리된 표준 아키텍처 체계로 운영됩니다.
+
+| 영역 | 핵심 파일 / 디렉토리 | 설명 및 역할 |
 | :--- | :--- | :--- |
-| 📘 **사용자** | **[docs/USER_GUIDE.md](./docs/USER_GUIDE.md)** | 5대 메인 탭 활용법, 5단계 추론 Provenance 워크플로우 & FAQ |
-| 🛠️ **개발자** | **[docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)** | 시스템 기술 스택, 백엔드 API 규격, 방어적 코드 수칙 & 배포 가이드 |
-| 🎨 **디자인** | **[Design.md](./Design.md)** | UI 디자인 철학, 글로벌 5대 탭 및 디자인 토큰 |
-| 🤖 **AI 스펙** | **[GEMINI.md](./GEMINI.md)** | Gemini 3.5 Flash 모델 사양, 생각 흐름(`thought`) 추출 & 용어 수칙 |
-| 🏛️ **아키텍처**| **[docs/architecture/](./docs/architecture/)** | 전체 시스템 구성도 (`ARCHITECTURE_&_ROADMAP.md`) |
-| 📋 **세부 스펙**| **[docs/specifications/](./docs/specifications/)** | 검증 체크리스트 및 백링크/LLM-Wiki 설계 제안서 |
+| 🚀 **Project Master** | **[`prod.md`](./prod.md)** | **[SSOT]** 전체 프로젝트 마스터 요구사항, 4계층 토폴로지, 에픽/태스크 매트릭스 및 변경 전파 규격 |
+| 🤖 **AI Agent Core** | **[`AGENT.md`](./AGENT.md)** | 다중 에이전트 아키텍처, `gemini-3.5-flash` 모델 규격, 생각 흐름(Thoughts) 추출 및 자율 수복 표준 |
+| 🎨 **Design System** | **[`DESIGN.md`](./DESIGN.md)** | 5대 글로벌 메인 탭 구조, Rich Aesthetic 디자인 토큰, 컴포넌트 일관성 수칙 및 변경 로그 |
+| 📑 **Documents** | **[`documents/`](./documents/)** | 개발 사양(01), 가이드라인(02), 메인 에픽(03), 대칭 태스크(04) 관리 전용 폴더 |
+| 💻 **Source Code** | **[`src/`](./src/)** | GitHub 공유용 백엔드 게이트웨이, 에이전트, 프롬프트, 도구 및 React 프론트엔드 전체 소스 |
+| 📚 **References** | **[`references/`](./references/)** | 외부 GitHub 코드(`knowledge-catalog`), 비즈니스 샘플 PDF, OKF 템플릿 격리 보관소 |
 
 ---
 
-## 🧭 사용자 액션 및 데이터 흐름 (Workflow & Data Flow)
+## 📂 디렉토리 구조 (Directory Structure)
 
-본 플랫폼은 비정형 지식을 수집하고, 이를 물리 스키마와 결합하여 데이터 카탈로그에 동기화하고, 최종적으로 지능형 대화(RAG)를 수행하기까지의 유기적인 엔드투엔드 파이프라인을 따릅니다.
+본 프로젝트는 최상위 루트 디렉토리를 커뮤니케이션 및 작업 명세 중심으로 극대화하여 정돈하고, 모든 소스 코드 및 패키지 레벨 파일들을 `srcs/` 하위 폴더로 격리 배치하였습니다.
 
-```mermaid
-graph TD
-    A[비정형 문서 PDF/텍스트] -->|1. Ingestion| B(3계층 위키 해체 저장)
-    B -->|2. Enrichment| C(BigQuery 메타데이터 + 위키 지식 결합)
-    C -->|OKF 마크다운 빌드| D[OKF 명세서 & 백링크 연결]
-    D -->|3. Sync| E(Dataplex Catalog Aspects 동기화)
-    D -->|4. Reasoning| F(Data Agent 하이브리드 질의 처리)
-    E -->|Catalog 데이터 갱신| F
-```
-
-### 1. 지식 축적 단계 (Knowledge Ingestion Flow)
-* **사용자 액션**: 사내 가이드라인, 정책 문서, PDF 파일을 플랫폼에 업로드합니다.
-* **데이터 흐름**: AI가 문서를 배경 요약(Summary), 개체/용어 사전(Entities), 비즈니스 규칙 명세(Concepts) 3가지 용도별 위키 문서로 자동 해체하여 GCS 지식베이스에 저장합니다.
-
-### 2. 온톨로지 명세 빌드 단계 (Ontology Enrichment Flow)
-* **사용자 액션**: 데이터셋 내 테이블들을 대상으로 OKF(Open Knowledge Format) 명세서 자동 생성을 실행합니다.
-* **데이터 흐름**: BigQuery 물리 스키마 정보와 GCS 위키 지식베이스의 정책들을 융합하여 테이블 설명서(`.md`)를 자율 조립합니다. 이때 물리 외래키(RDB FK) 및 프로퍼티 그래프 에지(Graph Edge) 관계를 추적하여 상호 참조 백링크(`[[table.md]]`)를 이중으로 정의합니다.
-
-### 3. 지식 카탈로그 동기화 단계 (Dataplex Catalog Sync Flow)
-* **사용자 액션**: 보강이 완료된 로컬 OKF 지식을 확인하고 Dataplex Catalog로 동기화(Push)를 실행합니다.
-* **데이터 흐름**: 로컬 OKF 마크다운 본문 및 YAML 메타데이터와 GCP Dataplex Catalog의 실제 정보를 실시간 비교(Diff)한 뒤, 테이블 설명(Description) 및 개요(Overview Aspect) 항목에 반영합니다.
-
-### 4. 지능형 질문 & 답변 단계 (Agent Reasoning Flow)
-* **사용자 액션**: 자연어로 비즈니스 통계나 데이터 관계 질문을 입력합니다.
-* **데이터 흐름**: 질문 의도에 맞춰 하이브리드 실행 전략(Standard SQL, Graph GQL `GRAPH_TABLE`, Direct Wiki)을 실시간 판별하고, 병렬 데이터 조회를 수행한 뒤 5단계 추론 Provenance(질문 ➔ 전략 ➔ 백링크 ➔ 위키 본문 ➔ 답변)와 함께 최종 리포트를 합성하여 반환합니다.
-
----
-
-## 📝 핵심 프롬프트 소스 관리 (Single Source of Truth)
-
-모든 AI 프롬프트 소스코드는 [prompts/agentPrompts.js](./prompts/agentPrompts.js)에서 단일 소스로 관리됩니다.
-
-1. **지식 해체 프롬프트 (`getLlmWikiDecomposePrompt`)**: 비정형 문서에서 핵심 개념과 물리 테이블 매핑 용어를 분해하여 3계층 위키 양식으로 분류 및 합성합니다.
-2. **지식 보강 프롬프트 (`getEnrichmentPrompt`)**: 테이블 스키마 구조에 사내 위키 룰셋을 주입하여 컬럼 설명을 보강하고 테이블 간 이중 백링크 관계를 형성합니다.
-3. **하이브리드 전략 판별 프롬프트 (`getSqlGenerationPrompt`)**: 자연어 질의를 분석하여 SQL 통계 및 GQL 관계 추적 쿼리를 병렬 도출하고, 예약어 충돌 방지를 위한 백틱(`) 이스케이프 처리를 주입합니다.
-4. **최종 리포트 합성 프롬프트 (`getFinalAnswerPrompt`)**: SQL 결과 레코드, GQL 그래프 관계 데이터, GCS 위키 지식을 결합하여 검증 정보 인용구가 포함된 보고서를 최종 편집합니다.
-
----
-
-## 📂 리포지토리 구성 가이드 (Directory Index)
-
-루트 디렉토리는 핵심 안내서 위주로 깔끔하게 구성되어 있으며, 세부 기능은 하위 디렉토리에서 확인하실 수 있습니다.
-
-```
+```text
 ontology-with-okf/
-├── docs/                        # 📖 모든 플랫폼 상세 문서 및 가이드 모음
-│   ├── USER_GUIDE.md            # 사용자 기능 사용 가이드 & FAQ
-│   ├── DEVELOPER_GUIDE.md       # 개발자 시스템 기술 스택 & 배포 가이드
-│   ├── architecture/            # 시스템 구성도 및 로드맵 문서
-│   ├── specifications/          # 백링크/GQL 설계 제안서 및 검증 스펙
-│   └── okf-templates/           # 사내 위키 템플릿 샘플 모음
-├── src/                         # 🖥️ React 프론트엔드 어플리케이션 소스
-├── agents/                      # 🤖 Gemini 3.5 Flash 호출 모듈 (geminiAgent.js)
-├── prompts/                     # 📝 AI 프롬프트 단일 관리소 (agentPrompts.js)
-├── tools/                       # ⚙️ GCP Client SDK (BigQuery, GCS) 래퍼 (gcpTools.js)
-├── Design.md                    # 🎨 UI 디자인 시스템 명세서
-├── GEMINI.md                    # 🤖 Gemini 연동 규격 & 방어적 프로그래밍 수칙
-├── Dockerfile                   # 🐳 Cloud Run 배포용 Dockerfile
-├── server.js                    # ⚙️ Express API 게이트웨이 백엔드 (Port 3003)
-└── README.md                    # 🌐 최상단 개요 & Quick Links (본 문서)
+├── .gitignore                # 🛡️ Git 형상 관리 제외 규칙
+├── AGENT.md                  # 🤖 AI 에이전트 아키텍처 및 Gemini 모델 표준
+├── DESIGN.md                 # 🎨 UI/UX 디자인 시스템 및 5대 탭 표준
+├── GEMINI.md                 # 🧠 Gemini AI 연동 명세서 및 자율 추론 설정
+├── prod.md                   # 🚀 [SSOT] 전체 프로젝트 마스터 요구사항 및 에픽 매핑
+├── README.md                 # 🌐 프로젝트 메인 리드미
+│
+├── documents/                # 📑 [1. 개발 사양 및 플랜 관리]
+│   ├── 01_architecture/      # 아키텍처 로드맵 및 LLM-Wiki 엔진 설계서
+│   ├── 02_guidelines/        # 개발자 가이드, 사용자 가이드, 검증 체크리스트
+│   ├── 03_epics/             # 메인 Epic 명세서 (EPIC-001 ~ EPIC-006)
+│   └── 04_tasks/             # Epic 1:1 대칭 Task 명세서 (TASK-001 ~ TASK-006)
+│
+├── references/               # 📚 [2. 외부 레퍼런스 및 참고 자료]
+│   ├── knowledge-catalog/    # Google Cloud OKF 외부 레포지토리
+│   ├── sample_docs/          # 비즈니스 샘플 PDF 문서
+│   ├── okf_templates/        # OKF 표준 템플릿 마크다운
+│   └── specifications/       # 외부 정책 YAML 및 설계 제안서
+│
+└── srcs/                     # 💻 [3. 전체 애플리케이션 소스 및 패키지 관리]
+    ├── package.json          # 📦 Node.js 프로젝트 설정 및 의존성
+    ├── package-lock.json     # 🔒 의존성 락 파일
+    ├── vite.config.js        # ⚡ Vite 번들러 설정 (port: 3003)
+    ├── server.js             # ⚙️ 백엔드 진입점 게이트웨이
+    ├── start_server.sh       # 🛡️ 무중단 자동 재기동 샌티널 스크립트
+    ├── Dockerfile            # 🐳 Cloud Run 배포용 컨테이너 빌드 명세서
+    ├── index.html            # 🌐 React HTML 엔트리포인트
+    ├── deploy/               # 🚀 배포 설정 파일
+    ├── scripts/              # 🔧 유틸리티 스크립트
+    ├── scratch/              # 🧪 로컬 캐시 및 임시 파일 저장소
+    ├── dist/                 # 🏗️ 프론트엔드 빌드 아티팩트
+    ├── public/               # 🎨 정적 리소스 및 파비콘
+    └── src/                  # 🧩 React 프론트엔드 및 백엔드 코어 모듈
+        ├── agents/           # Gemini 3.5 Flash 에이전트 클라이언트 (geminiAgent.js)
+        ├── prompts/          # 프롬프트 단일 관리 모듈 (agentPrompts.js)
+        ├── tools/            # GCP BigQuery, GCS, Dataplex 도구 (gcpTools.js)
+        ├── components/       # React UI 컴포넌트 모음
+        ├── lib/              # 유틸리티 함수
+        ├── assets/           # 이미지 및 에셋
+        ├── server.js         # Express API 게이트웨이 서버 본체
+        ├── App.jsx           # React 메인 애플리케이션
+        ├── App.css           # 컴포넌트 스타일시트
+        ├── index.css         # 글로벌 디자인 토큰
+        └── main.jsx          # React 렌더링 진입점
 ```
 
 ---
 
-## 🚀 로컬 실행 방법 (Port: 3003)
+## 🚀 로컬 실행 방법 (Quick Start)
 
-### 1. GCP 로그인 및 ADC 설정
+### 1. 패키지 설치 및 빌드
 ```bash
-gcloud auth login
-gcloud auth application-default login
-```
-
-### 2. 기동 명령
-```bash
-# 의존성 패키지 설치
+# srcs 폴더로 이동 후 의존성 설치 및 프로덕션 빌드
+cd srcs
 npm install
-
-# 프론트엔드 프로덕션 에셋 빌드
 npm run build
-
-# 백엔드 통합 API 서버 기동 (http://localhost:3003 접속)
-node server.js
 ```
+
+### 2. 백엔드 및 웹 서버 구동
+```bash
+# srcs 폴더 내에서 단일 포트(3003)로 API Gateway 및 웹 UI 동시 구동
+node server.js
+
+# 또는 자동 재기동 샌티널 구동
+bash start_server.sh
+```
+* **로컬 웹 접속 주소**: [http://localhost:3003/](http://localhost:3003/)
