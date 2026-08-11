@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * OKF & Knowledge Graph End-to-End Pipeline Manager
  * Handles user scenarios: Ingestion -> OKF 3-Layer Extraction -> Rule Feedback -> BQ/Spanner Graph DDL Generation
  */

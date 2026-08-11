@@ -1,5 +1,8 @@
 # 🌐 OKF Omni: Enterprise Ontology Integration Platform
 
+**[🇺🇸 English Guide (README_EN.md)](./README_EN.md) | [🇰🇷 한국어 문서 (README.md)](./README.md)**
+
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red.svg)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/🚀_Cloud_Run_Live_Demo-Click_to_Launch-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://okf-omni-924723860007.us-central1.run.app/)
 [![Project Master](https://img.shields.io/badge/Master_Spec-prod.md-FF6F00?style=for-the-badge&logo=markdown&logoColor=white)](./prod.md)
 [![Agent Spec](https://img.shields.io/badge/AI_Engine-AGENT.md-34A853?style=for-the-badge&logo=googlegemini&logoColor=white)](./AGENT.md)
@@ -24,10 +27,11 @@
 | :--- | :--- | :--- |
 | 🚀 **Project Master** | **[`prod.md`](./prod.md)** | **[SSOT]** 전체 프로젝트 마스터 요구사항, 4계층 토폴로지, 에픽/태스크 매트릭스 및 변경 전파 규격 |
 | 🤖 **AI Agent Core** | **[`AGENT.md`](./AGENT.md)** | 다중 에이전트 아키텍처, `gemini-3.5-flash` 모델 규격, 생각 흐름(Thoughts) 추출 및 자율 수복 표준 |
+| 🛠️ **Workflow Skills** | **[`SKILL.md`](./SKILL.md)** | **[Skills Master]** Epic/Task 동기화, 로컬 테스트, GCP Cloud Run 배포 마스터 워크플로우 스킬 |
 | 🎨 **Design System** | **[`DESIGN.md`](./DESIGN.md)** | 5대 글로벌 메인 탭 구조, Rich Aesthetic 디자인 토큰, 컴포넌트 일관성 수칙 및 변경 로그 |
 | 📑 **Documents** | **[`documents/`](./documents/)** | 개발 사양(01), 가이드라인(02), 메인 에픽(03), 대칭 태스크(04) 관리 전용 폴더 |
 | 💻 **Source Code** | **[`src/`](./src/)** | GitHub 공유용 백엔드 게이트웨이, 에이전트, 프롬프트, 도구 및 React 프론트엔드 전체 소스 |
-| 📚 **References** | **[`references/`](./references/)** | 외부 GitHub 코드(`knowledge-catalog`), 비즈니스 샘플 PDF, OKF 템플릿 격리 보관소 |
+| 📚 **References** | **[`references/`](./references/)** | 외부 오픈소스 프레임워크([`google/adk-python`](https://github.com/google/adk-python), `knowledge-catalog`), 비즈니스 샘플 PDF, OKF 템플릿 격리 보관소 |
 
 ---
 
@@ -38,17 +42,27 @@
 ```text
 ontology-with-okf/
 ├── .gitignore                # 🛡️ Git 형상 관리 제외 규칙
+├── LICENSE                   # 📜 PolyForm Noncommercial 1.0.0 라이선스
 ├── AGENT.md                  # 🤖 AI 에이전트 아키텍처 및 Gemini 모델 표준
 ├── DESIGN.md                 # 🎨 UI/UX 디자인 시스템 및 5대 탭 표준
 ├── GEMINI.md                 # 🧠 Gemini AI 연동 명세서 및 자율 추론 설정
 ├── prod.md                   # 🚀 [SSOT] 전체 프로젝트 마스터 요구사항 및 에픽 매핑
-├── README.md                 # 🌐 프로젝트 메인 리드미
+├── SKILL.md                  # 🛠️ [Skills Master] 마스터 워크플로우 스킬 정의서
+├── README.md                 # 🌐 프로젝트 메인 리드미 (한국어)
+├── README_EN.md              # 🌐 Project Overview & Guide (English)
+│
+├── skills/                   # 🛠️ [개발/운영 워크플로우 스킬 모음]
+│   ├── EPIC_TASK_DEV.md      # 🚀 Epic 기반 Task 추적 및 소스 구현 연속 개발 스킬
+│   ├── LOCAL_TEST_AND_DEPLOY.md # 🚀 기능 위주 로컬 브라우저 테스트 & Cloud Run 배포 스킬
+│   ├── GITHUB_PUSH.md        # 🐙 코드 정돈, API키 보안 스캔 & GitHub Push 스킬
+│   ├── GITHUB_REF_UPDATE.md  # 🔄 외부 GitHub 레퍼런스 최신 신규 코드 갱신 스킬
+│   └── DEV_WORKFLOW.md       # 🛡️ 5대 개발 수칙 검증 스킬
 │
 ├── documents/                # 📑 [1. 개발 사양 및 플랜 관리]
 │   ├── 01_architecture/      # 아키텍처 로드맵 및 LLM-Wiki 엔진 설계서
 │   ├── 02_guidelines/        # 개발자 가이드, 사용자 가이드, 검증 체크리스트
-│   ├── 03_epics/             # 메인 Epic 명세서 (EPIC-001 ~ EPIC-006)
-│   └── 04_tasks/             # Epic 1:1 대칭 Task 명세서 (TASK-001 ~ TASK-006)
+│   ├── 03_epics/             # 메인 Epic 명세서 (EPIC-001 ~ EPIC-008)
+│   └── 04_tasks/             # Epic 1:1 대칭 Task 명세서 (TASK-001 ~ TASK-008)
 │
 ├── references/               # 📚 [2. 외부 레퍼런스 및 참고 자료]
 │   ├── knowledge-catalog/    # Google Cloud OKF 외부 레포지토리
@@ -104,3 +118,25 @@ node server.js
 bash start_server.sh
 ```
 * **로컬 웹 접속 주소**: [http://localhost:3003/](http://localhost:3003/)
+
+---
+
+## 📜 라이선스 및 이용 정책 (License & Terms of Use)
+
+본 프로젝트는 **[PolyForm Noncommercial License 1.0.0](LICENSE)** 하에 배포 및 관리됩니다.
+
+### ✅ 비영리 목적 허용 범위 (Permitted Noncommercial Use)
+- **개인 학습 및 학술 연구**: 학생, 연구원, 개발자의 개인 학습, 연구, 비영리 실험 및 테스트 목적의 코드 활용과 복제는 자유롭게 허용됩니다.
+- **비영리 단체 및 교육 기관**: 공공 연구기관, 비영리 교육기관의 비영리 학술 프로젝트 활용이 허용됩니다.
+- **템플릿 및 아키텍처 학습**: OKF v0.2 및 LLM-Wiki 온톨로지 참조 구현체로서의 학습 및 비영리 프로토타이핑이 가능합니다.
+
+### 🚫 상업적 이용 엄격 금지 (Commercial Use Strictly Prohibited)
+- **상용 서비스 탑재 및 유료 호스팅**: 본 소프트웨어 또는 그 파생 저작물을 유료 서비스, 상용 SaaS 솔루션, 상업용 클라우드 제품 등에 탑재하거나 호스팅하는 행위는 엄격히 금지됩니다.
+- **영리 기업 내 프로덕션 배포**: 영리 기업의 사내 상용 업무 시스템 또는 영리 목적의 데이터 파이프라인에 무단 도입 및 사용하는 것은 제한됩니다.
+- **재라이선싱 및 판매**: 본 소프트웨어 코드 및 파생 결과물을 제3자에게 유상 판매, 서브라이선스 발행, 상업적 번들링하는 행위는 금지됩니다.
+
+### 💼 상업용 라이선스 문의 (Commercial Inquiries)
+기업 내 상용 시스템 도입, 프로덕션 상업적 연동 또는 별도의 상용 라이선스가 필요한 경우 아래 저작권자에게 문의하여 주시기 바랍니다.
+* **저작권자 / 유지관리자**: `seanjung` (<seanjung@google.com>)
+* **라이선스 전문 확인**: [`LICENSE`](./LICENSE)
+

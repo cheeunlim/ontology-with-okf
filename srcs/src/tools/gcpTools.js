@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * Google Cloud Platform (GCP) Connectors & Automation Tools
  * 
  * 본 모듈은 BigQuery 및 GCS 연동 클라이언트를 초기화하고,

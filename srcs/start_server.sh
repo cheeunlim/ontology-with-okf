@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+# Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/Users/seanjung/.nvm/versions/node/v24.14.0/bin:$PATH
 export GEMINI_API_KEY="${GEMINI_API_KEY}"
 

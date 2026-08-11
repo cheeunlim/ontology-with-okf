@@ -13,7 +13,7 @@
 
 ---
 
-## 2. 🧩 핵심 프롬프트 엔진 참조 ([prompts/agentPrompts.js](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/prompts/agentPrompts.js))
+## 2. 🧩 핵심 프롬프트 엔진 참조 ([prompts/agentPrompts.js](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/prompts/agentPrompts.js))
 
 1. **`getLlmWikiDecomposePrompt`**: 비정형 지식 3계층 마크다운 분해/합성
 2. **`getEnrichmentPrompt`**: 스키마 보강 및 이중 백링크 형성
@@ -22,7 +22,7 @@
 
 ---
 
-## 3. 🛠️ GCP SDK 및 클라이언트 도구 참조 ([tools/gcpTools.js](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/tools/gcpTools.js))
+## 3. 🛠️ GCP SDK 및 클라이언트 도구 참조 ([tools/gcpTools.js](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/tools/gcpTools.js))
 
 - **BigQuery Schema Discovery**: DDL / Table Field Metadata 가져오기
 - **Dataplex Catalog Aspect Push/Diff**: OKF 마크다운 ➔ Dataplex Aspects 양방향 Diff 및 갱신
@@ -30,9 +30,21 @@
 
 ---
 
-## 4. 🧭 Agent 개발 시 활용 체크리스트
+## 4. 🐍 Agent Development Kit (ADK) Python 참조 (google/adk-python)
+
+- **공식 레퍼런스 저장소**: [google/adk-python](https://github.com/google/adk-python)
+- **로컬 레퍼런스 구현체**: [`references/knowledge-catalog/okf/`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/references/knowledge-catalog/okf)
+- **주요 툴셋 & 의존성**: `google-adk>=2.0` (Python 3.11+)
+- **핵심 역할**:
+  - OKF(Open Knowledge Format) 번들을 자율 생성하는 Reference Agent 라이브러리 연동
+  - `google.adk.cli` 및 `google.adk` 에이전트 러너를 통한 온톨로지 하베스팅 및 지식 카탈로그 동기화 연동 참조
+
+---
+
+## 5. 🧭 Agent 개발 시 활용 체크리스트
 
 - [x] OKF 3계층 마크다운 수집 및 저장 파이프라인 (`01_raw`, `02_okf`, `03_feedback`)
+- [x] 구글 ADK Python 레퍼런스([google/adk-python](https://github.com/google/adk-python)) 및 `references/knowledge-catalog/` 툴셋 이식
 - [ ] Dataplex Catalog Aspects SDK 래퍼 릴레이션 연동
 - [ ] GQL Property Graph 에지 상호 참조 매핑
 - [ ] 5단계 Provenance 추론 파이프라인 결합

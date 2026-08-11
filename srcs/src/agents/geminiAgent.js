@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * 🤖 AI Agents Execution Layer (Gemini Core & Python Pipeline Delegator)
  * 
  * [수행 역할 및 비즈니스 프로세스]
@@ -80,9 +83,9 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
     }
     
     const usageMetadata = data.usageMetadata || {
-      promptTokenCount: Math.round(prompt.length / 4),
+      promptTokenCount: Math.round((prompt || '').length / 4),
       candidatesTokenCount: Math.round(text.length / 4),
-      totalTokenCount: Math.round((prompt.length + text.length) / 4)
+      totalTokenCount: Math.round(((prompt || '').length + (text || '').length) / 4)
     };
 
     if (returnDetails) {
@@ -100,7 +103,7 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
         if (error) {
           const fallbackText = "gcloud ADC authentication standard response.";
           const usageMetadata = {
-            promptTokenCount: Math.round(prompt.length / 4),
+            promptTokenCount: Math.round((prompt || '').length / 4),
             candidatesTokenCount: Math.round(fallbackText.length / 4),
             totalTokenCount: Math.round((prompt.length + fallbackText.length) / 4)
           };
@@ -137,9 +140,9 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
           }
           
           const usageMetadata = {
-            promptTokenCount: Math.max(Math.round(prompt.length / 4), 100),
+            promptTokenCount: Math.max(Math.round((prompt || '').length / 4), 100),
             candidatesTokenCount: Math.max(Math.round(text.length / 4), 50),
-            totalTokenCount: Math.max(Math.round((prompt.length + text.length) / 4), 150)
+            totalTokenCount: Math.max(Math.round(((prompt || '').length + (text || '').length) / 4), 150)
           };
           
           if (returnDetails) {
@@ -152,9 +155,9 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
         } catch (fetchErr) {
           const fallbackText = `Vertex AI Execution Fallback response.`;
           const usageMetadata = {
-            promptTokenCount: Math.round(prompt.length / 4),
+            promptTokenCount: Math.round((prompt || '').length / 4),
             candidatesTokenCount: 80,
-            totalTokenCount: Math.round(prompt.length / 4) + 80
+            totalTokenCount: Math.round((prompt || '').length / 4) + 80
           };
           if (returnDetails) {
             return resolve({ text: fallbackText, thoughts: '', usageMetadata, elapsedMs });

@@ -2,19 +2,19 @@
 
 ## 1. 개요 및 실험 목적 (Epic Overview)
 * **Epic ID**: `EPIC-007`
-* **대칭 Task**: [`TASK-007` (Experimental Karpathy LLM-Wiki)](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-007_EXPERIMENTAL_KARPATHY_LLM_WIKI.md)
+* **대칭 Task**: [`TASK-007` (Experimental Karpathy LLM-Wiki)](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/05_experimental/TASK-007_EXPERIMENTAL_KARPATHY_LLM_WIKI.md)
 * **상태**: 🧪 **`Experimental / Research Only` (실제 프로덕션 적용 계획 없음)**
 * **연구 목적**: Andrej Karpathy가 제안한 'LLM OS & LLM-Wiki' 개념을 기반으로 비정형 비즈니스 문서를 3계층(`01_summary`, `02_entities`, `03_concepts`)으로 자율 해체·컴파일하는 독립적인 **실험적 지식 컴파일러 파이프라인의 가능성을 연구·검토**합니다.
-* **상위 연계 문서**: [`prod.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/prod.md), [`AGENT.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/AGENT.md)
+* **상위 연계 문서**: [`prod.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/prod.md), [`AGENT.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/AGENT.md)
 * **참조 연구 문서**:
-  * [`documents/01_architecture/KARPATHY_LLM_WIKI_GUIDE.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/01_architecture/KARPATHY_LLM_WIKI_GUIDE.md)
-  * [`documents/01_architecture/LLM_WIKI_ENGINE_SPECIFICATION.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/01_architecture/LLM_WIKI_ENGINE_SPECIFICATION.md)
+  * [`documents/01_architecture/KARPATHY_LLM_WIKI_GUIDE.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/01_architecture/KARPATHY_LLM_WIKI_GUIDE.md)
+  * [`documents/01_architecture/LLM_WIKI_ENGINE_SPECIFICATION.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/01_architecture/LLM_WIKI_ENGINE_SPECIFICATION.md)
 
 ---
 
 ## 2. 실험적 연구 범위 및 아키텍처 (Experimental Scope)
 
-본 Epic은 실제 온톨로지 보강 파이프라인([`EPIC-003`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-003_UNSTRUCTURED_DOC_OKF_ENRICHMENT.md))과 완전히 분리된 **연구/프로토타입 전용 영역**입니다.
+본 Epic은 실제 온톨로지 보강 파이프라인([`EPIC-003`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/03_epics/EPIC-003_WIKI_UNSTRUCTURED_DOC_TRANSPILER.md))과 완전히 분리된 **연구/프로토타입 전용 영역**입니다.
 
 ```mermaid
 flowchart TD

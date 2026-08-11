@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * Feedback Handler & Changelog Manager Module
  * Manages real-time business rule feedback injection, changelog tracking,
  * and graph synchronization status (PENDING_GRAPH_SYNC -> SYNCED).

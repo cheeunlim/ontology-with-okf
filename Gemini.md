@@ -52,7 +52,7 @@ const response = await ai.models.generateContent({
 3. **Cloud Run 배포 시 Dataplex 및 gcloud CLI 종속성 및 IAM 권한**:
    * 본 플랫폼의 Glossary 탭 및 Dataplex 프로파일 조회 기능은 내부적으로 `exec`를 통해 `gcloud dataplex` CLI 명령을 실행합니다.
    * 이를 위해 배포용 `Dockerfile`에 Google Cloud SDK(`google-cloud-cli`) 설치 프로세스가 반드시 보장되어야 합니다.
-   * Cloud Run 서비스 계정(Service Account)에는 Dataplex Entry 및 Datascans 조회를 위해 최소한 **`roles/dataplex.viewer`** (Dataplex 뷰어) 역할 또는 `dataplex.entries.get`, `dataplex.datascans.list`, `dataplex.datascans.getJob` 권한이 부여되어야 정상 작동합니다.
+   * Cloud Run 서비스 계정(Service Account)에는 Dataplex Entry 조회를 위해 최소한 **`roles/dataplex.viewer`** (Dataplex 뷰어) 및 **Aspect 푸시/동기화를 위한 `roles/dataplex.editor` / `roles/dataplex.catalogEditor`** (`dataplex.entries.update`) 권한이 부여되어야 정상 작동합니다.
 4. **BigQuery Property Graph DDL 및 GQL 생성 표준 규격 & 예약어 백틱 감싸기**:
    * AI가 생성하는 Property Graph DDL 및 GQL(`GRAPH_TABLE`) 구문은 반드시 BigQuery 표준 그래프 레퍼런스 구문을 준수해야 합니다.
    * BigQuery 예약어 및 노드/에지 레이블 명칭(`Order`, `User`, `Placed`, `OrderedItem`, `Triggered`, `Event`, `Product`)은 GQL 패턴 작성 시 반드시 **백틱(\`)**으로 감싸야 합니다 (예: `(u:\`User\`)-[p:\`Placed\`]->(o:\`Order\`)`). 백틱 누락 시 `Syntax error: Unexpected keyword ORDER` 에러가 발생하므로 템플릿 프롬프트(`agentPrompts.js`)에 이를 강제 보장합니다.

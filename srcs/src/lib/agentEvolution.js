@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * 4-Stage Agent Evolution Engine & Comparator
  * Simulates and evaluates Agent response evolution across 4 stages:
  * Stage 1: Vanilla RAG (No Context)

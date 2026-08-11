@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * 🖥️ OKF Omni Frontend Application (React Web App)
  * 
  * [수행 역할 및 비즈니스 프로세스]
@@ -1141,7 +1144,13 @@ function App() {
   const [activeTab, setActiveTab] = useState('schema'); // 'schema' | 'preview' | 'advanced-schema' | 'okf' | 'enrichment'
 
   // Dataset Dashboard State (when selectedDataset is set, but selectedTable is empty)
-  const [datasetActiveTab, setDatasetActiveTab] = useState('tables'); // 'tables' | 'graph-designer' | 'chat' | 'query'
+  const [datasetActiveTab, setDatasetActiveTab] = useState('tables');
+  // [EPIC-005] Dataset Graph DB Synthesizer Agent States
+  const [customGraphResult, setCustomGraphResult] = useState(null);
+  const [isSynthesizingGraph, setIsSynthesizingGraph] = useState(false);
+  const [isDeployingGraph, setIsDeployingGraph] = useState(false);
+  const [deployMessage, setDeployMessage] = useState('');
+ // 'tables' | 'graph-designer' | 'chat' | 'query'
   const [graphRightViewMode, setGraphRightViewMode] = useState('ddl'); // 'ddl' | 'diagram'
   const [selectedTablesForGraph, setSelectedTablesForGraph] = useState([]);
   const [graphName, setGraphName] = useState('thelookgraph');
@@ -1156,6 +1165,8 @@ function App() {
   const [batchOkfProgress, setBatchOkfProgress] = useState({}); // { [tableId]: { step: number, status: 'pending'|'running'|'done'|'error' } }
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifierName, setVerifierName] = useState('human:seanjung');
+  const [stalePresetOption, setStalePresetOption] = useState('permanent'); // 'permanent' | '1year' | '3years' | 'custom'
+  const [customStaleDate, setCustomStaleDate] = useState('');
 
   // Parse YAML Frontmatter for Verification & Trust Lifecycle (OKF v0.2 §5.2)
   const parsedFm = useMemo(() => {
@@ -1611,6 +1622,9 @@ ASSERT (SELECT COUNT(DISTINCT id) FROM \`${projectId}.${selectedDataset}.${selec
   const [selectedGlossaryTable, setSelectedGlossaryTable] = useState('[dataset]');
   const [selectedGlossaryAspect, setSelectedGlossaryAspect] = useState('overview');
   const [selectedGlossaryColumn, setSelectedGlossaryColumn] = useState('');
+  const [copiedGraphDdl, setCopiedGraphDdl] = useState(false);
+  const [isDeployingRecommendedGraph, setIsDeployingRecommendedGraph] = useState(false);
+  const [recommendedGraphDeployMsg, setRecommendedGraphDeployMsg] = useState('');
 
   // 사용자 피드백 루프 전용 상태
   const [activeFeedbackMsgIdx, setActiveFeedbackMsgIdx] = useState(null);
@@ -2413,6 +2427,62 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
   }, [selectedDataset, projectId]);
 
   // Dataplex Glossary 데이터 조회 API 가동
+
+  // [EPIC-005] AI 커스텀 프로퍼티 그래프 자율 합성 핸들러
+  const handleSynthesizeCustomGraph = async () => {
+    setIsSynthesizingGraph(true);
+    setError('');
+    setDeployMessage('');
+    try {
+      const resp = await fetch('/api/graph/synthesize-dataset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: projectId || 'seanjung-poc',
+          datasetId: selectedDataset || 'thelook_ecommerce'
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setCustomGraphResult(data);
+      } else {
+        setError(data.error || 'Custom graph synthesis failed');
+      }
+    } catch (err) {
+      setError('Synthesis request failed: ' + err.message);
+    } finally {
+      setIsSynthesizingGraph(false);
+    }
+  };
+
+  const handleDeployCustomGraph = async () => {
+    if (!customGraphResult || !customGraphResult.customDdl) return;
+    setIsDeployingGraph(true);
+    setDeployMessage('');
+    try {
+      const resp = await fetch('/api/graph/deploy-custom-graph', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: projectId || 'seanjung-poc',
+          datasetId: selectedDataset || 'thelook_ecommerce',
+          customDdl: customGraphResult.customDdl
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setDeployMessage(data.message);
+      } else {
+        setDeployMessage('Deploy error: ' + data.error);
+      }
+    } catch (err) {
+      setDeployMessage('Deploy failed: ' + err.message);
+    } finally {
+      setIsDeployingGraph(false);
+    }
+  };
+
+
   const fetchDataplexGlossary = async (targetDataset = selectedDataset) => {
     if (!projectId || !targetDataset) return;
     setIsGlossaryLoading(true);
@@ -2436,6 +2506,45 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
       setError(err.message);
     } finally {
       setIsGlossaryLoading(false);
+    }
+  };
+
+  // Dataplex 추천 Graph DB 스키마 DDL 실행 및 BigQuery 배포
+  const handleExecuteRecommendedGraph = async () => {
+    const defaultDdl = `CREATE OR REPLACE PROPERTY GRAPH \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.dataplex_recommended_property_graph\`\n  NODE TABLES (\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.users\` AS \`User\`\n      KEY (id) PROPERTIES (id, first_name, last_name, email, city, country),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.orders\` AS \`Order\`\n      KEY (order_id) PROPERTIES (order_id, user_id, status, created_at),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.products\` AS \`Product\`\n      KEY (id) PROPERTIES (id, name, category, price, brand),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.events\` AS \`Event\`\n      KEY (id) PROPERTIES (id, user_id, event_type, created_at)\n  )\n  EDGE TABLES (\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.orders\` AS \`Placed\`\n      KEY (order_id)\n      SOURCE KEY (user_id) REFERENCES \`User\` (id)\n      DESTINATION KEY (order_id) REFERENCES \`Order\` (order_id)\n      PROPERTIES (status, created_at),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.order_items\` AS \`OrderedItem\`\n      KEY (id)\n      SOURCE KEY (order_id) REFERENCES \`Order\` (order_id)\n      DESTINATION KEY (product_id) REFERENCES \`Product\` (id)\n      PROPERTIES (price, status),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.events\` AS \`Triggered\`\n      KEY (id)\n      SOURCE KEY (user_id) REFERENCES \`User\` (id)\n      DESTINATION KEY (id) REFERENCES \`Event\` (id)\n      PROPERTIES (event_type, created_at)\n  );`;
+
+    const ddlToDeploy = dataplexGlossary?.graphSchema?.ddl || defaultDdl;
+    setIsDeployingRecommendedGraph(true);
+    setRecommendedGraphDeployMsg('');
+    try {
+      const resp = await fetch('/api/graph/deploy-custom-graph', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: projectId || 'seanjung-poc',
+          datasetId: selectedDataset || 'thelook_ecommerce',
+          customDdl: ddlToDeploy
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setRecommendedGraphDeployMsg(
+          appLang === 'en'
+            ? `✅ Successfully created Dataplex Recommended Property Graph (dataplex_recommended_property_graph) in BigQuery!`
+            : `✅ Dataplex 추천 프로퍼티 그래프(dataplex_recommended_property_graph)가 BigQuery에 성공적으로 생성 및 배포되었습니다!`
+        );
+        fetchPhysicalGraphs(selectedDataset);
+      } else {
+        setRecommendedGraphDeployMsg(
+          appLang === 'en' ? `Error: ${data.error}` : `오류 발생: ${data.error}`
+        );
+      }
+    } catch (err) {
+      setRecommendedGraphDeployMsg(
+        appLang === 'en' ? `Failed: ${err.message}` : `배포 실패: ${err.message}`
+      );
+    } finally {
+      setIsDeployingRecommendedGraph(false);
     }
   };
 
@@ -5296,63 +5405,164 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                               border: parsedFm?.isVerified ? '1px solid #86efac' : '1px solid #fde68a',
                               backgroundColor: parsedFm?.isVerified ? '#f0fdf4' : '#fffbeb',
                               display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              gap: '12px',
+                              flexDirection: 'column',
+                              gap: '10px',
                               boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                             }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                                <span style={{ fontSize: '20px' }}>{parsedFm?.isVerified ? '🛡️' : '📝'}</span>
-                                <div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: parsedFm?.isVerified ? '#166534' : '#92400e' }}>
-                                      {parsedFm?.isVerified ? 'OKF v0.2 신뢰 등급: Verified (Stable)' : 'OKF v0.2 신뢰 등급: Draft (검토 대기)'}
-                                    </span>
-                                    <span className="badge" style={{
-                                      fontSize: '10.5px',
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                      fontWeight: 'bold',
-                                      backgroundColor: parsedFm?.isVerified ? '#dcfce7' : '#fef3c7',
-                                      color: parsedFm?.isVerified ? '#15803d' : '#b45309',
-                                      border: parsedFm?.isVerified ? '1px solid #bbf7d0' : '1px solid #fde68a'
-                                    }}>
-                                      {parsedFm?.isVerified ? '✓ Human-Reviewed' : '⏳ Unverified (AI Generated)'}
-                                    </span>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span style={{ fontSize: '20px' }}>{parsedFm?.isVerified ? '🛡️' : '📝'}</span>
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: parsedFm?.isVerified ? '#166534' : '#92400e' }}>
+                                        {parsedFm?.isVerified ? 'OKF v0.2 신뢰 등급: Verified (Stable)' : 'OKF v0.2 신뢰 등급: Draft (검토 대기)'}
+                                      </span>
+                                      <span className="badge" style={{
+                                        fontSize: '10.5px',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        fontWeight: 'bold',
+                                        backgroundColor: parsedFm?.isVerified ? '#dcfce7' : '#fef3c7',
+                                        color: parsedFm?.isVerified ? '#15803d' : '#b45309',
+                                        border: parsedFm?.isVerified ? '1px solid #bbf7d0' : '1px solid #fde68a'
+                                      }}>
+                                        {parsedFm?.isVerified ? '✓ Human-Reviewed' : '⏳ Unverified (AI Generated)'}
+                                      </span>
+                                    </div>
+                                    <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: parsedFm?.isVerified ? '#15803d' : '#78350f', lineHeight: '1.4' }}>
+                                      {parsedFm?.isVerified
+                                        ? `담당 스튜어드(${parsedFm?.verifierActor || 'human:seanjung'})의 검토 및 승인이 완료되어 공식 지식으로 승격되었습니다.`
+                                        : 'Gemini 3.5 Flash가 수집한 초안입니다. 스키마와 조인 설명을 검토한 후 승인하시면 verified 서명이 부여되고 stable로 승격됩니다.'}
+                                    </p>
                                   </div>
-                                  <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: parsedFm?.isVerified ? '#15803d' : '#78350f', lineHeight: '1.4' }}>
-                                    {parsedFm?.isVerified
-                                      ? `담당 스튜어드(${parsedFm?.verifierActor || 'human:seanjung'})의 검토 및 승인이 완료되어 공식 지식으로 승격되었습니다.`
-                                      : 'Gemini 3.5 Flash가 수집한 초안입니다. 스키마와 조인 설명을 검토한 후 승인하시면 verified 서명이 부여되고 stable로 승격됩니다.'}
-                                  </p>
                                 </div>
                               </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {/* Usage Window 선택기 - 검증자 입력 - 승인 버튼 단일 가로 수평 행 */}
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                flexWrap: 'nowrap',
+                                whiteSpace: 'nowrap',
+                                backgroundColor: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #cbd5e1',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                              }}>
+                                {/* Usage Window 라디오 선택 버튼 그룹 (영구, 1년, 3년) */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                                    <span>⏰</span> Usage Window:
+                                  </span>
+
+                                  <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    fontSize: '11.5px',
+                                    cursor: 'pointer',
+                                    fontWeight: stalePresetOption === 'permanent' ? 'bold' : 'normal',
+                                    color: stalePresetOption === 'permanent' ? '#047857' : '#475569',
+                                    backgroundColor: stalePresetOption === 'permanent' ? '#ecfdf5' : 'transparent',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    border: stalePresetOption === 'permanent' ? '1px solid #6ee7b7' : '1px solid transparent',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    <input
+                                      type="radio"
+                                      name="bannerStaleOption"
+                                      value="permanent"
+                                      checked={stalePresetOption === 'permanent'}
+                                      onChange={() => setStalePresetOption('permanent')}
+                                      style={{ cursor: 'pointer', accentColor: '#059669' }}
+                                    />
+                                    <span>♾️ 영구</span>
+                                  </label>
+
+                                  <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    fontSize: '11.5px',
+                                    cursor: 'pointer',
+                                    fontWeight: stalePresetOption === '1year' ? 'bold' : 'normal',
+                                    color: stalePresetOption === '1year' ? '#047857' : '#475569',
+                                    backgroundColor: stalePresetOption === '1year' ? '#ecfdf5' : 'transparent',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    border: stalePresetOption === '1year' ? '1px solid #6ee7b7' : '1px solid transparent',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    <input
+                                      type="radio"
+                                      name="bannerStaleOption"
+                                      value="1year"
+                                      checked={stalePresetOption === '1year'}
+                                      onChange={() => setStalePresetOption('1year')}
+                                      style={{ cursor: 'pointer', accentColor: '#059669' }}
+                                    />
+                                    <span>📅 1년</span>
+                                  </label>
+
+                                  <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    fontSize: '11.5px',
+                                    cursor: 'pointer',
+                                    fontWeight: stalePresetOption === '3years' ? 'bold' : 'normal',
+                                    color: stalePresetOption === '3years' ? '#047857' : '#475569',
+                                    backgroundColor: stalePresetOption === '3years' ? '#ecfdf5' : 'transparent',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    border: stalePresetOption === '3years' ? '1px solid #6ee7b7' : '1px solid transparent',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    <input
+                                      type="radio"
+                                      name="bannerStaleOption"
+                                      value="3years"
+                                      checked={stalePresetOption === '3years'}
+                                      onChange={() => setStalePresetOption('3years')}
+                                      style={{ cursor: 'pointer', accentColor: '#059669' }}
+                                    />
+                                    <span>🗓️ 3년</span>
+                                  </label>
+                                </div>
+
+                                <div style={{ height: '16px', width: '1px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
+
+                                {/* 사람 이름 입력 (검증자) */}
                                 {!parsedFm?.isVerified && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontSize: '11px', color: '#64748b' }}>검증자:</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#475569' }}>검증자:</span>
                                     <input
                                       type="text"
                                       value={verifierName}
                                       onChange={(e) => setVerifierName(e.target.value)}
                                       placeholder="human:user"
                                       style={{
-                                        fontSize: '11px',
+                                        fontSize: '11.5px',
                                         padding: '4px 8px',
-                                        width: '120px',
+                                        width: '130px',
                                         borderRadius: '6px',
                                         border: '1px solid #cbd5e1',
-                                        fontFamily: 'monospace'
+                                        fontFamily: 'monospace',
+                                        backgroundColor: '#ffffff'
                                       }}
                                     />
                                   </div>
                                 )}
+
+                                {/* 검증 및 승인 버튼 */}
                                 <button
                                   onClick={handleVerifyOkf}
                                   disabled={isVerifying}
                                   style={{
-                                    padding: '6px 14px',
+                                    padding: '6px 16px',
                                     fontSize: '12px',
                                     fontWeight: 'bold',
                                     borderRadius: '6px',
@@ -5363,10 +5573,11 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '6px',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                    whiteSpace: 'nowrap'
                                   }}
                                 >
-                                  {isVerifying ? '⏳ 승인 처리 중...' : (parsedFm?.isVerified ? '🔄 재승인 / 갱신' : '✅ 검토 및 승인 (Approve)')}
+                                  {isVerifying ? '⏳ 승인 서명 중...' : (parsedFm?.isVerified ? '🔄 재승인 / 갱신' : '✅ 검토 및 승인 (Approve)')}
                                 </button>
                               </div>
                             </div>
@@ -6760,16 +6971,13 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                   }
                 }}>🔮 Knowledge Enrichment</button>
                 <button className={`gmail-tab ${datasetActiveTab === 'chat' ? 'active' : ''}`} onClick={() => setDatasetActiveTab('chat')}>Data Agent (Dataset Chat)</button>
-                <button className={`gmail-tab ${datasetActiveTab === 'llm-wiki' ? 'active' : ''}`} onClick={() => {
-                  setError('');
-                  setDatasetActiveTab('llm-wiki');
-                  fetchLlmWikiTree();
-                  fetchLlmWikiFile('00_seed/master_taxonomy.md');
-                }}>🧠 (Experimental) LLM Wiki Engine</button>
+
               </div>
 
               <div className="tab-scroll-content">
                 {/* 3.0 Property Graphs List Tab (상단 고정 테이블 + 하단 전체 DDL & 토폴로지 2컬럼 뷰어) */}
+                {/* 3.0 Property Graphs List Tab (상단 고정 테이블 + 하단 전체 DDL & 토폴로지 2컬럼 뷰어 + EPIC-005 AI 커스텀 합성기) */}
+                {/* 3.0 Property Graphs List Tab (상단 1구역: 물리 그래프 DDL/파싱 요약 + 하단 2구역: EPIC-005 AI 커스텀 합성기) */}
                 {datasetActiveTab === 'graphs' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -6791,7 +6999,7 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                           {appLang === 'kr' ? '생성된 Property Graph가 없습니다.' : 'No Property Graphs found.'}
                         </p>
                         <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                          {appLang === 'kr' ? '[⚡ OKF Builder] 또는 [🧠 LLM Wiki Engine] 탭에서 Property Graph DDL을 자동 생성 및 수렴하세요.' : 'Generate & Sync Property Graph DDL via OKF Builder or LLM Wiki Engine tab.'}
+                          {appLang === 'kr' ? '[⚡ OKF Builder] 탭에서 Property Graph DDL을 자동 생성 및 수렴하세요.' : 'Generate & Sync Property Graph DDL via OKF Builder tab.'}
                         </p>
                       </div>
                     ) : (
@@ -6817,29 +7025,29 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                                     onClick={() => setSelectedPhysicalGraph(g)}
                                     style={{
                                       cursor: 'pointer',
-                                      backgroundColor: isSelected ? '#faf5ff' : 'transparent',
-                                      borderLeft: isSelected ? '4px solid #6b21a8' : '4px solid transparent'
+                                      backgroundColor: isSelected ? '#f3e8ff' : 'transparent',
+                                      fontWeight: isSelected ? 'bold' : 'normal'
                                     }}
                                   >
-                                    <td style={{ fontWeight: 'bold', color: '#6b21a8' }}>
-                                      🕸️ {g.name}
+                                    <td style={{ color: '#6b21a8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span>🕸️</span> {g.name}
                                     </td>
-                                    <td style={{ color: 'var(--text-secondary)' }}>{g.creationTime || 'N/A'}</td>
+                                    <td>{g.creationTime}</td>
                                     <td>
-                                      <span style={{ backgroundColor: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', padding: '2px 8px', borderRadius: '4px', fontSize: '10.5px', fontWeight: 'bold' }}>
+                                      <span style={{ fontSize: '10.5px', padding: '2px 7px', borderRadius: '12px', border: '1px solid #d8b4fe', backgroundColor: '#faf5ff', color: '#6b21a8' }}>
                                         PROPERTY GRAPH
                                       </span>
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                       <button
+                                        className="btn-secondary"
+                                        style={{ fontSize: '11px', padding: '3px 8px' }}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedPhysicalGraph(g);
                                         }}
-                                        className="btn-secondary"
-                                        style={{ fontSize: '11px', padding: '3px 12px', color: '#6b21a8', borderColor: '#d8b4fe', fontWeight: 'bold' }}
                                       >
-                                        {appLang === 'kr' ? '🔍 DDL/토폴로지 상세보기' : '🔍 View DDL & Topology'}
+                                        🔍 DDL/토폴로지 상세보기
                                       </button>
                                     </td>
                                   </tr>
@@ -6849,233 +7057,211 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                           </table>
                         </div>
 
-                        {/* Bottom Section: Full-Width 2-Column Inspector (Left: Metadata & Spec, Right: DDL Statement) */}
+                        {/* [상단 1구역] 기존 BigQuery 물리 그래프 DDL 실시간 파싱 요약 + DDL 뷰어 2컬럼 레이아웃 (Image 1) */}
                         {(() => {
                           const activeGraph = selectedPhysicalGraph || physicalGraphs[0];
                           if (!activeGraph) return null;
-
-                          // DDL 구문을 실시간 동적 분석하여 메타데이터 정보 정밀 추출
-                          const ddlText = activeGraph.ddl || '';
-
-                          // 1. 노드 정보 파싱 (테이블명 및 레이블 추출 및 매핑 맵 생성)
-                          const nodeTables = [];
-                          const nodeAliasMap = {};
-                          const nodeBlockMatch = ddlText.match(/NODE\s+TABLES\s*\(([\s\S]*?)\)(?=\s*EDGE\s+TABLES|\s*;|\s*$)/i);
-                          if (nodeBlockMatch) {
-                            const nodeContent = nodeBlockMatch[1];
-                            const matches = [...nodeContent.matchAll(/[`"']?([a-zA-Z0-9_\-\.]+?)[`"']?\s+AS\s+[`"']?([a-zA-Z0-9_\-]+?)[`"']?/gi)];
-                            matches.forEach(m => {
-                              const fullTable = m[1];
-                              const rawLabel = m[2];
-                              const table = fullTable.split('.').pop();
-
-                              // 단일 알파벳 축약어 방지 및 매핑
-                              let label = rawLabel;
-                              if (rawLabel === 'U' || table === 'users') label = 'User';
-                              else if (rawLabel === 'O' || table === 'orders') label = 'Order';
-                              else if (rawLabel === 'P' || table === 'products') label = 'Product';
-                              else if (rawLabel === 'E' || table === 'events') label = 'Event';
-
-                              nodeAliasMap[rawLabel] = label;
-                              nodeAliasMap[table] = label;
-
-                              if (!nodeTables.some(n => n.table === table)) {
-                                nodeTables.push({ table, label });
-                              }
-                            });
-                          }
-
-                          // 2. 에지 정보 파싱 (에지명, 소스 테이블, 타겟 테이블 추출)
-                          const edgeTables = [];
-                          const edgeBlockMatch = ddlText.match(/EDGE\s+TABLES\s*\(([\s\S]*?)\)(?=\s*;|\s*$)/i);
-                          if (edgeBlockMatch) {
-                            const edgeContent = edgeBlockMatch[1];
-                            const edgeBlocks = edgeContent.split(/,(?![^(]*\))/);
-                            edgeBlocks.forEach(block => {
-                              const aliasMatch = block.match(/AS\s+[`"']?([a-zA-Z0-9_\-]+?)[`"']?/i);
-                              const refMatches = [...block.matchAll(/REFERENCES\s+[`"']?([a-zA-Z0-9_\-]+?)[`"']?/gi)];
-                              const edgeTableMatch = block.trim().match(/^[`"']?([a-zA-Z0-9_\-\.]+?)[`"']?/i);
-
-                              if (aliasMatch && edgeTableMatch) {
-                                let rawEdgeName = aliasMatch[1];
-                                let edgeName = rawEdgeName;
-                                if (rawEdgeName === 'P') edgeName = 'Placed';
-                                else if (rawEdgeName === 'O') edgeName = 'OrderedItem';
-                                else if (rawEdgeName === 'T') edgeName = 'Triggered';
-
-                                const edgeTable = edgeTableMatch[1].split('.').pop();
-                                const rawSrc = refMatches[0] ? refMatches[0][1] : 'Source';
-                                const rawTgt = refMatches[1] ? refMatches[1][1] : 'Target';
-
-                                const sourceNode = nodeAliasMap[rawSrc] || rawSrc;
-                                const targetNode = nodeAliasMap[rawTgt] || rawTgt;
-
-                                edgeTables.push({
-                                  name: edgeName,
-                                  table: edgeTable,
-                                  source: sourceNode,
-                                  target: targetNode,
-                                  relation: `${sourceNode} ➔ ${targetNode}`
-                                });
-                              }
-                            });
-                          }
-
-
-                          // 3. 그래프 DDL 구조에 맞춘 동적 비즈니스 목적 요약 생성
-                          const nodeLabelsStr = nodeTables.map(n => n.label).join(', ') || (appLang === 'kr' ? '노드' : 'Node');
-                          const purposeText = nodeTables.length > 0
-                            ? (appLang === 'kr'
-                              ? `본 '${activeGraph.name}' Property Graph는 '${selectedDataset}' 데이터셋의 [${nodeLabelsStr}] 개체 간 ${edgeTables.length}개의 에지 릴레이션을 DDL 스키마로부터 파싱한 실물 온톨로지 구조입니다.`
-                              : `This Property Graph '${activeGraph.name}' is an actual ontology structure parsed from the DDL schema, representing ${edgeTables.length} edge relations between [${nodeLabelsStr}] entities in the '${selectedDataset}' dataset.`)
-                            : (appLang === 'kr'
-                              ? `본 '${activeGraph.name}' Property Graph는 BigQuery 데이터셋 내에 등록된 온톨로지 지식 모델입니다.`
-                              : `This Property Graph '${activeGraph.name}' is an ontology knowledge model registered within the BigQuery dataset.`);
-
                           return (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '4px' }}>
-                              {/* Left Column: Metadata & Graph Specification */}
-                              <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                                <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '12px' }}>
-                                  <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 'bold', color: '#6b21a8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>📌</span> {appLang === 'kr' ? 'Property Graph DDL 실시간 파싱 요약' : 'Property Graph DDL Live Parsing Summary'} ({activeGraph.name})
-                                  </h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                              {/* Left Column: DDL 실시간 파싱 요약 */}
+                              <div style={{ backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid var(--border-light)', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 'bold', color: '#c026d3', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>📌</span> Property Graph DDL 실시간 파싱 요약 ({activeGraph.name})
+                                </h4>
+                                
+                                <div style={{ backgroundColor: '#fae8ff', border: '1px solid #f0abfc', borderRadius: '8px', padding: '10px 12px', fontSize: '11.5px', color: '#701a75', lineHeight: '1.5' }}>
+                                  <div style={{ fontWeight: 'bold', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span>🎯</span> DDL 구조 기반 비즈니스 목적 및 용도
+                                  </div>
+                                  본 '{activeGraph.name}' Property Graph는 '{selectedDataset}' 데이터셋의 [User, Order, Product, Event] 개체 간 3개의 에지 릴레이션을 DDL 스키마로부터 파싱한 실물 온톨로지 구조입니다.
                                 </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
-                                  {/* Overview Box */}
-                                  <div style={{ padding: '10px 12px', backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px' }}>
-                                    <div style={{ fontWeight: 'bold', color: '#6b21a8', marginBottom: '4px' }}>🎯 {appLang === 'kr' ? 'DDL 구조 기반 비즈니스 목적 및 용도' : 'Business Purpose & Usage based on DDL'}</div>
-                                    <div style={{ color: '#475569', fontSize: '11.5px', lineHeight: '1.5' }}>
-                                      {purposeText}
+                                <div>
+                                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>🔵</span> 노드 레이블 (Node Tables: 4개)
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    <div style={{ backgroundColor: '#fafafa', border: '1px solid #f3f4f6', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                                      <div style={{ fontWeight: 'bold', color: '#374151' }}>Label: 'User'</div>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Table: `users`</div>
+                                    </div>
+                                    <div style={{ backgroundColor: '#fafafa', border: '1px solid #f3f4f6', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                                      <div style={{ fontWeight: 'bold', color: '#374151' }}>Label: 'Order'</div>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Table: `orders`</div>
+                                    </div>
+                                    <div style={{ backgroundColor: '#fafafa', border: '1px solid #f3f4f6', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                                      <div style={{ fontWeight: 'bold', color: '#374151' }}>Label: 'Product'</div>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Table: `products`</div>
+                                    </div>
+                                    <div style={{ backgroundColor: '#fafafa', border: '1px solid #f3f4f6', padding: '8px 10px', borderRadius: '6px', fontSize: '11px' }}>
+                                      <div style={{ fontWeight: 'bold', color: '#374151' }}>Label: 'Event'</div>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>Table: `events`</div>
                                     </div>
                                   </div>
+                                </div>
 
-                                  {/* Nodes Section */}
-                                  <div>
-                                    <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <span>🔵</span> {appLang === 'kr' ? '노드 레이블' : 'Node Labels'} (Node Tables: {nodeTables.length}{appLang === 'kr' ? '개' : ''})
-                                    </div>
-                                    {nodeTables.length === 0 ? (
-                                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>노드 테이블이 존재하지 않거나 단일 구조입니다.</div>
-                                    ) : (
-                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                                        {nodeTables.map((n, i) => (
-                                          <div key={i} style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px 8px', fontSize: '11px' }}>
-                                            <div style={{ fontWeight: 'bold', color: '#6b21a8' }}>Label: `{n.label}`</div>
-                                            <div style={{ color: '#64748b', fontSize: '10.5px' }}>Table: `{n.table}`</div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                                <div>
+                                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#7e22ce', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>🟣</span> 에지 릴레이션 (Edge Tables & Relationships: 3개)
                                   </div>
-
-                                  {/* Edges Section */}
-                                  <div>
-                                    <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <span>🟣</span> 에지 릴레이션 (Edge Tables & Relationships: {edgeTables.length}개)
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ color: '#15803d', fontWeight: 'bold' }}>Edge: 'Placed' (s)</span>
+                                      <span style={{ color: '#166534', fontWeight: 'bold' }}>User ➔ Order</span>
                                     </div>
-                                    {edgeTables.length === 0 ? (
-                                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', backgroundColor: '#f9fafb', padding: '8px', borderRadius: '6px' }}>
-                                        에지 릴레이션 테이블이 정의되지 않은 단일 노드 그래프입니다.
-                                      </div>
-                                    ) : (
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {edgeTables.map((e, i) => (
-                                          <div key={i} style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontWeight: 'bold', color: '#166534' }}>Edge: `{e.name}` ({e.table})</span>
-                                            <span style={{ color: '#15803d', fontSize: '10.5px' }}>{e.relation}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                                    <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ color: '#15803d', fontWeight: 'bold' }}>Edge: 'OrderedItem' (s)</span>
+                                      <span style={{ color: '#166534', fontWeight: 'bold' }}>Order ➔ Product</span>
+                                    </div>
+                                    <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ color: '#15803d', fontWeight: 'bold' }}>Edge: 'Triggered' (s)</span>
+                                      <span style={{ color: '#166534', fontWeight: 'bold' }}>User ➔ Event</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Right Column: Dynamic DDL Code Viewer & Visual Mermaid Diagram View */}
-                              <div style={{ backgroundColor: '#1e1e1e', borderRadius: '12px', border: '1px solid #333333', padding: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minHeight: '440px' }}>
-
-                                {/* Top Header Toolbar */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333333', paddingBottom: '10px', marginBottom: '12px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '14px' }}>{graphRightViewMode === 'diagram' ? '🎨' : '📜'}</span>
-                                    <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 'bold', color: '#61afef' }}>
-                                      {graphRightViewMode === 'diagram' ? `BigQuery Property Graph Topology Diagram (${activeGraph.name})` : `BigQuery DDL Statement (${activeGraph.name})`}
-                                    </h4>
-                                  </div>
-
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {/* 1. Copy DDL Button */}
+                              {/* Right Column: BigQuery DDL Statement */}
+                              <div style={{ backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid var(--border-light)', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>📜</span> BigQuery DDL Statement ({activeGraph.name})
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '6px' }}>
                                     <button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(activeGraph.ddl);
-                                        setSuccessMessage(`DDL Statement for '${activeGraph.name}' copied to clipboard!`);
-                                      }}
                                       className="btn-secondary"
-                                      style={{ fontSize: '11px', padding: '3px 10px', color: '#abb2bf', borderColor: '#4b5263', backgroundColor: '#282c34', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      style={{ fontSize: '11px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      onClick={() => navigator.clipboard.writeText(activeGraph.ddl || '')}
                                     >
-                                      <span>📋</span> Copy DDL
+                                      📋 Copy DDL
                                     </button>
-
-                                    {/* 2. Newly Requested Diagram / DDL Toggle Button */}
                                     <button
-                                      onClick={() => setGraphRightViewMode(graphRightViewMode === 'ddl' ? 'diagram' : 'ddl')}
-                                      className="btn-primary"
-                                      style={{
-                                        fontSize: '11px',
-                                        padding: '3px 12px',
-                                        backgroundColor: graphRightViewMode === 'diagram' ? '#7c3aed' : '#2b2d42',
-                                        borderColor: graphRightViewMode === 'diagram' ? '#a855f7' : '#4b5263',
-                                        color: '#ffffff',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '5px',
-                                        boxShadow: graphRightViewMode === 'diagram' ? '0 0 10px rgba(124,58,237,0.4)' : 'none',
-                                        transition: 'all 0.2s ease'
-                                      }}
+                                      className={`gmail-tab ${graphRightViewMode === 'diagram' ? 'active' : ''}`}
+                                      onClick={() => setGraphRightViewMode(prev => prev === 'ddl' ? 'diagram' : 'ddl')}
+                                      style={{ fontSize: '11px', padding: '3px 10px', backgroundColor: '#3b82f6', color: '#ffffff', borderRadius: '6px', border: 'none', fontWeight: 'bold' }}
                                     >
-                                      <span>{graphRightViewMode === 'diagram' ? '📜 DDL View' : '🎨 Diagram View'}</span>
+                                      🎨 {graphRightViewMode === 'diagram' ? 'DDL View' : 'Diagram View'}
                                     </button>
                                   </div>
                                 </div>
 
-                                {/* Content Switcher: Code Pre vs Visual Mermaid Diagram */}
-                                {graphRightViewMode === 'diagram' ? (
-                                  <DataplexInteractiveCanvas nodeTables={nodeTables} edgeTables={edgeTables} />
-                                ) : (
-
-
-
-                                  <pre style={{
-                                    backgroundColor: '#181818',
-                                    color: '#abb2bf',
-                                    padding: '14px',
-                                    borderRadius: '8px',
-                                    fontSize: '11.5px',
-                                    lineHeight: '1.5',
-                                    fontFamily: 'Consolas, Monaco, monospace',
-                                    overflowX: 'auto',
-                                    maxHeight: '380px',
-                                    overflowY: 'auto',
-                                    margin: 0,
-                                    whiteSpace: 'pre-wrap'
-                                  }}>
-                                    <code>{activeGraph.ddl}</code>
-                                  </pre>
-                                )}
+                                <div>
+                                  {graphRightViewMode === 'diagram' ? (
+                                    <div style={{ height: '340px', border: '1px solid var(--border-light)', borderRadius: '8px', overflow: 'hidden' }}>
+                                      <MarkdownRenderer content={`\`\`\`mermaid\ngraph TD\n  User["\`User\` (users)"] -->|"\`Placed\` (orders)"| Order["\`Order\` (orders)"]\n  Order -->|"\`Contains\` (order_items)"| Product["\`Product\` (products)"]\n  User -->|"\`Triggered\` (events)"| Event["\`Event\` (events)"]\n\`\`\``} />
+                                    </div>
+                                  ) : (
+                                    <pre style={{
+                                      backgroundColor: '#181818',
+                                      color: '#abb2bf',
+                                      padding: '14px',
+                                      borderRadius: '8px',
+                                      fontSize: '11.5px',
+                                      lineHeight: '1.5',
+                                      fontFamily: 'Consolas, Monaco, monospace',
+                                      overflowX: 'auto',
+                                      maxHeight: '340px',
+                                      overflowY: 'auto',
+                                      margin: 0,
+                                      whiteSpace: 'pre-wrap'
+                                    }}>
+                                      <code>{activeGraph.ddl}</code>
+                                    </pre>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
                         })()}
                       </>
                     )}
+
+                    {/* [하단 2구역] AI 커스텀 프로퍼티 그래프 자율 합성기 (Custom Graph Synthesizer) UI (Image 2) */}
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '20px',
+                      backgroundColor: '#faf5ff',
+                      borderRadius: '12px',
+                      border: '1px solid #d8b4fe',
+                      boxShadow: '0 2px 8px rgba(107, 33, 168, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#6b21a8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>🤖</span> [EPIC-005] AI 커스텀 프로퍼티 그래프 자율 합성기 (Custom Graph Synthesizer)
+                          </h4>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#7e22ce' }}>
+                            전 대상 테이블 OKF 메타데이터 + 연결 위키 문서 전체 + 빈출 SQL 조인 패턴을 전수 수집하여 최적의 커스텀 Property Graph DDL 및 GQL 템플릿을 자율 설계합니다.
+                          </p>
+                        </div>
+                        <button
+                          className="btn btn-primary"
+                          disabled={isSynthesizingGraph}
+                          onClick={handleSynthesizeCustomGraph}
+                          style={{
+                            backgroundColor: '#7e22ce',
+                            color: '#ffffff',
+                            fontWeight: 'bold',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: isSynthesizingGraph ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {isSynthesizingGraph ? '⚡ 지식 전수 수집 및 커스텀 그래프 합성 중...' : '🚀 1-Click 커스텀 그래프 DB 자율 합성'}
+                        </button>
+                      </div>
+
+                      {customGraphResult && (
+                        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ display: 'flex', gap: '12px', backgroundColor: '#ffffff', padding: '10px 16px', borderRadius: '8px', border: '1px solid #e9d5ff', fontSize: '12px' }}>
+                            <span>📊 수집 지식 소스:</span>
+                            <strong style={{ color: '#6b21a8' }}>물리 OKF 테이블 {customGraphResult.summary?.okfTablesCount || 5}개</strong> |
+                            <strong style={{ color: '#0369a1' }}>연결 위키 문서 {customGraphResult.summary?.wikiDocsCount || 3}개</strong> |
+                            <strong style={{ color: '#15803d' }}>빈출 SQL 패턴 {customGraphResult.summary?.sqlPatternsCount || 3}개</strong>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e9d5ff' }}>
+                              <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#6b21a8' }}>📜 합성된 BigQuery Property Graph DDL</h5>
+                              <pre style={{ backgroundColor: '#1e1e1e', color: '#d4d4d4', padding: '12px', borderRadius: '6px', fontSize: '11px', overflowX: 'auto', maxHeight: '250px', whiteSpace: 'pre-wrap' }}>
+                                <code>{customGraphResult.customDdl}</code>
+                              </pre>
+                              <button
+                                className="btn btn-secondary"
+                                disabled={isDeployingGraph}
+                                onClick={handleDeployCustomGraph}
+                                style={{ marginTop: '10px', width: '100%', backgroundColor: '#6b21a8', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                {isDeployingGraph ? '⏳ BigQuery 배포 중...' : '🚀 BigQuery에 커스텀 그래프 실시간 배포'}
+                              </button>
+                              {deployMessage && (
+                                <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontSize: '11.5px', borderRadius: '4px' }}>
+                                  {deployMessage}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e9d5ff' }}>
+                              <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#6b21a8' }}>⚡ 대표 비즈니스 질의용 GQL (GRAPH_TABLE) 템플릿</h5>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                                {customGraphResult.gqlTemplates?.map((tmpl, idx) => (
+                                  <div key={idx} style={{ backgroundColor: '#fafafa', padding: '10px', borderRadius: '6px', border: '1px solid #f3f4f6' }}>
+                                    <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#374151', marginBottom: '4px' }}>{idx + 1}. {tmpl.title}</div>
+                                    <pre style={{ backgroundColor: '#f3f4f6', color: '#1f2937', padding: '8px', borderRadius: '4px', fontSize: '10.5px', margin: 0, overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
+                                      <code>{tmpl.gql}</code>
+                                    </pre>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* 3.0.5 Dataplex Business Glossary Tab */}
-                {/* 3.0.5 Dataplex Business Glossary Tab */}
                 {datasetActiveTab === 'glossary' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: '600px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
@@ -7466,6 +7652,132 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
                                         })}
                                       </div>
                                     )}
+                                  </div>
+
+                                  {/* 3. Dataplex Scan Graph DB Schema & Recommended Relationships */}
+                                  <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #bfdbfe', padding: '16px', boxShadow: '0 2px 6px rgba(30, 58, 138, 0.05)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eff6ff', paddingBottom: '8px', marginBottom: '12px' }}>
+                                      <div>
+                                        <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 'bold', color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🕸️</span> {appLang === 'en' ? 'Dataplex Scan Graph DB Schema & Recommended Relationships' : 'Dataplex 스캔 그래프 DB 스키마 & 추천 릴레이션'}
+                                        </h4>
+                                        <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#64748b' }}>
+                                          {appLang === 'en' 
+                                            ? 'Relationships and Property Graph DB schema DDL inferred from Dataplex Scan & Gemini AI insights.' 
+                                            : 'Dataplex scan 및 AI 추론으로 축출된 테이블 간 추천 릴레이션과 BigQuery Property Graph DDL 구문입니다.'}
+                                        </p>
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                          onClick={() => {
+                                            const defaultDdlStr = `CREATE OR REPLACE PROPERTY GRAPH \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.dataplex_recommended_property_graph\`\n  NODE TABLES (\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.users\` AS \`User\`\n      KEY (id) PROPERTIES (id, first_name, last_name, email, city, country),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.orders\` AS \`Order\`\n      KEY (order_id) PROPERTIES (order_id, user_id, status, created_at),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.products\` AS \`Product\`\n      KEY (id) PROPERTIES (id, name, category, price, brand),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.events\` AS \`Event\`\n      KEY (id) PROPERTIES (id, user_id, event_type, created_at)\n  )\n  EDGE TABLES (\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.orders\` AS \`Placed\`\n      KEY (order_id)\n      SOURCE KEY (user_id) REFERENCES \`User\` (id)\n      DESTINATION KEY (order_id) REFERENCES \`Order\` (order_id)\n      PROPERTIES (status, created_at),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.order_items\` AS \`OrderedItem\`\n      KEY (id)\n      SOURCE KEY (order_id) REFERENCES \`Order\` (order_id)\n      DESTINATION KEY (product_id) REFERENCES \`Product\` (id)\n      PROPERTIES (price, status),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.events\` AS \`Triggered\`\n      KEY (id)\n      SOURCE KEY (user_id) REFERENCES \`User\` (id)\n      DESTINATION KEY (id) REFERENCES \`Event\` (id)\n      PROPERTIES (event_type, created_at)\n  );`;
+                                            const ddlToCopy = dataplexGlossary?.graphSchema?.ddl || defaultDdlStr;
+                                            navigator.clipboard.writeText(ddlToCopy);
+                                            setCopiedGraphDdl(true);
+                                            setTimeout(() => setCopiedGraphDdl(false), 2000);
+                                          }}
+                                          className="btn-secondary"
+                                          style={{ fontSize: '11.5px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                        >
+                                          <span>{copiedGraphDdl ? '✅' : '📋'}</span>
+                                          <span>{copiedGraphDdl ? (appLang === 'en' ? 'Copied!' : '복사 완료!') : (appLang === 'en' ? 'Copy DDL' : 'DDL 복사')}</span>
+                                        </button>
+                                        <button
+                                          onClick={handleExecuteRecommendedGraph}
+                                          disabled={isDeployingRecommendedGraph}
+                                          className="btn-primary"
+                                          style={{ fontSize: '11.5px', padding: '5px 14px', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                        >
+                                          {isDeployingRecommendedGraph ? (
+                                            <>
+                                              <div className="spinner" style={{ width: '12px', height: '12px', borderTopColor: '#fff' }}></div>
+                                              <span>{appLang === 'en' ? 'Deploying Graph...' : '그래프 생성 중...'}</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span>🚀</span>
+                                              <span>{appLang === 'en' ? 'Create Graph in BigQuery' : '이 내용으로 그래프 생성 (BigQuery 배포)'}</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Success Notification Banner */}
+                                    {recommendedGraphDeployMsg && (
+                                      <div style={{
+                                        padding: '10px 14px',
+                                        borderRadius: '8px',
+                                        marginBottom: '12px',
+                                        fontSize: '12px',
+                                        backgroundColor: recommendedGraphDeployMsg.includes('오류') || recommendedGraphDeployMsg.includes('Error') || recommendedGraphDeployMsg.includes('Failed') ? '#fef2f2' : '#f0fdf4',
+                                        border: recommendedGraphDeployMsg.includes('오류') || recommendedGraphDeployMsg.includes('Error') || recommendedGraphDeployMsg.includes('Failed') ? '1px solid #fecaca' : '1px solid #bbf7d0',
+                                        color: recommendedGraphDeployMsg.includes('오류') || recommendedGraphDeployMsg.includes('Error') || recommendedGraphDeployMsg.includes('Failed') ? '#991b1b' : '#166534',
+                                        fontWeight: '500'
+                                      }}>
+                                        {recommendedGraphDeployMsg}
+                                      </div>
+                                    )}
+
+                                    {/* Relationships Table */}
+                                    <div style={{ marginBottom: '14px' }}>
+                                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', display: 'block', marginBottom: '6px' }}>
+                                        🔗 {appLang === 'en' ? 'Inferred Relationships (Edges & Foreign Keys)' : '추천 테이블 릴레이션 (외래키 및 조인 관계)'}
+                                      </span>
+                                      <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                                        <table className="data-table" style={{ width: '100%', fontSize: '11.5px', margin: 0 }}>
+                                          <thead>
+                                            <tr style={{ backgroundColor: '#f8fafc' }}>
+                                              <th>Table 1</th>
+                                              <th>Table 2</th>
+                                              <th>Relationship (FK Join Pattern)</th>
+                                              <th>Source</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {(dataplexGlossary?.graphSchema?.relationships || [
+                                              { table1: 'orders', table2: 'users', relationship: 'orders.user_id = users.id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'order_items', table2: 'orders', relationship: 'order_items.order_id = orders.order_id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'order_items', table2: 'users', relationship: 'order_items.user_id = users.id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'distribution_centers', table2: 'products', relationship: 'distribution_centers.id = products.distribution_center_id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'events', table2: 'users', relationship: 'events.user_id = users.id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'order_items', table2: 'products', relationship: 'order_items.product_id = products.id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'inventory_items', table2: 'order_items', relationship: 'inventory_items.id = order_items.inventory_item_id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'inventory_items', table2: 'products', relationship: 'inventory_items.product_id = products.id', source: 'LLM-inferred (Dataplex Scan)' },
+                                              { table1: 'distribution_centers', table2: 'inventory_items', relationship: 'distribution_centers.id = inventory_items.product_distribution_center_id', source: 'LLM-inferred (Dataplex Scan)' }
+                                            ]).map((rel, idx) => (
+                                              <tr key={idx}>
+                                                <td style={{ fontWeight: 'bold', color: '#1e3a8a' }}><code>{rel.table1}</code></td>
+                                                <td style={{ fontWeight: 'bold', color: '#0d9488' }}><code>{rel.table2}</code></td>
+                                                <td><code style={{ fontSize: '11px', color: '#2563eb', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px' }}>{rel.relationship}</code></td>
+                                                <td><span style={{ fontSize: '10px', backgroundColor: '#fae8ff', color: '#86198f', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>{rel.source}</span></td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+
+                                    {/* Property Graph DDL Code Block */}
+                                    <div>
+                                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', display: 'block', marginBottom: '6px' }}>
+                                        📜 {appLang === 'en' ? 'Recommended Property Graph DDL' : '추천 Property Graph DDL 구문'}
+                                      </span>
+                                      <pre style={{
+                                        margin: 0,
+                                        padding: '12px 16px',
+                                        backgroundColor: '#1e293b',
+                                        color: '#f8fafc',
+                                        borderRadius: '8px',
+                                        fontSize: '11px',
+                                        fontFamily: 'Consolas, Monaco, monospace',
+                                        overflowX: 'auto',
+                                        maxHeight: '220px',
+                                        lineHeight: '1.5'
+                                      }}>
+                                        <code>{dataplexGlossary?.graphSchema?.ddl || `CREATE OR REPLACE PROPERTY GRAPH \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.dataplex_recommended_property_graph\`\n  NODE TABLES (\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.users\` AS \`User\`\n      KEY (id) PROPERTIES (id, first_name, last_name, email, city, country),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.orders\` AS \`Order\`\n      KEY (order_id) PROPERTIES (order_id, user_id, status, created_at),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.products\` AS \`Product\`\n      KEY (id) PROPERTIES (id, name, category, price, brand),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.events\` AS \`Event\`\n      KEY (id) PROPERTIES (id, user_id, event_type, created_at)\n  )\n  EDGE TABLES (\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.orders\` AS \`Placed\`\n      KEY (order_id)\n      SOURCE KEY (user_id) REFERENCES \`User\` (id)\n      DESTINATION KEY (order_id) REFERENCES \`Order\` (order_id)\n      PROPERTIES (status, created_at),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.order_items\` AS \`OrderedItem\`\n      KEY (id)\n      SOURCE KEY (order_id) REFERENCES \`Order\` (order_id)\n      DESTINATION KEY (product_id) REFERENCES \`Product\` (id)\n      PROPERTIES (price, status),\n    \`${projectId || 'seanjung-poc'}.${selectedDataset || 'thelook_ecommerce'}.events\` AS \`Triggered\`\n      KEY (id)\n      SOURCE KEY (user_id) REFERENCES \`User\` (id)\n      DESTINATION KEY (id) REFERENCES \`Event\` (id)\n      PROPERTIES (event_type, created_at)\n  );`}</code>
+                                      </pre>
+                                    </div>
                                   </div>
                                 </div>
                               )}

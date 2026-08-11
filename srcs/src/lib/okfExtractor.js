@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+ * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+ * 
  * OKF 3-Layer Semantic Extractor Module
  * Transforms raw interview transcripts / CS documents into standard OKF 3-layer Markdown files
  * conforming to Google Cloud Open Knowledge Format (OKF) specification.

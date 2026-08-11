@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
+# Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
+
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
 export PATH=$PATH:/usr/local/bin:/Users/seanjung/.nvm/versions/node/v24.14.0/bin

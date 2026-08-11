@@ -1,31 +1,20 @@
-# ⚙️ [TASK-001] Foundation Setup & Full-Stack Deployment
+# ⚙️ [TASK-001] Foundation Setup Implementation
 
 ## 1. Task 개요 & Epic 매핑
 * **Task ID**: `TASK-001`
-* **연계 Epic**: [`EPIC-001` (Foundation Platform)](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-001_FOUNDATION_PLATFORM.md)
+* **연계 Epic**: [`EPIC-001` (Foundation Platform)](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/03_epics/EPIC-001_FOUNDATION_PLATFORM.md)
 * **상태**: `Completed`
-* **담당 컴포넌트**: `src/server.js`, `src/App.jsx`, `start_server.sh`, `Dockerfile`
+* **담당 컴포넌트**: `srcs/src/server.js`, `start_server.sh`, `srcs/src/agents/geminiAgent.js`
 
 ---
 
 ## 2. 세부 구현 내역
-1. **Express & React 19 아키텍처 정립**:
-   - `src/server.js`에서 `/dist` 정적 서빙 및 API 라우트 통합.
-   - 루트 `server.js`를 통해 `src/server.js`로 투명 포워딩 지원.
-2. **Sentinel 자동 재기동 구현**:
-   - `start_server.sh` 스크립트를 통한 1초 내 자동 수복 루프 구성.
-3. **듀얼 인증 체계**:
-   - `src/agents/geminiAgent.js`에 `GEMINI_API_KEY` 및 `gcloud ADC` 토큰 지원.
+1. **아키텍처 분리**: `documents/`, `references/`, `srcs/` 디렉토리 표준화.
+2. **백엔드 게이트웨이**: Node.js Express API 서버(Port 3003) 구축.
+3. **AI 파이프라인**: `gemini-3.5-flash` 모델 고정 및 이중 인증(API Key / ADC Fallback) 구성.
+4. **프로세스 샌티널**: `start_server.sh` 스크립트 작성 및 자동 재기동 보장.
 
 ---
 
 ## 3. 검증 결과 로그
-* **검증 환경**: 
-  - 로컬 Node v24.14.0 & Vite v8.1.0 (`http://localhost:3003/`)
-  - Google Cloud Run 프로덕션 배포 (`us-central1`, 리비전 `okf-omni-00032-wp4`)
-* **빌드 및 배포 결과**:
-  - `npm run build` 프로덕션 번들 정상 완료.
-  - Cloud Build 컨테이너 이미지 패키징 및 Cloud Run 배포 완료.
-* **서버 가용성 검증**:
-  - Cloud Run 프로덕션 URL: [https://okf-omni-924723860007.us-central1.run.app](https://okf-omni-924723860007.us-central1.run.app)
-  - HTTP GET `/` 및 `/api/datasets` 200 OK 정상 응답 확인.
+* **결과**: 로컬 API 서버 정상 작동 및 헬스체크 검증 완료.

@@ -26,10 +26,12 @@
 
 3. **⚙️ 3. BigQuery & Spanner Graph**:
    - BigQuery Property Graph DDL 및 Google Cloud Spanner Graph DDL 시각화 캔버스.
+   - **[EPIC-005] Dataset Graph DB Synthesizer Agent 서브 탭**: 데이터셋 단위 선택기, 데이터셋 내 전체 OKF 스키마 + 연결 위키 + 빈출 SQL 패턴 3대 지식 카드, 1-Click Property Graph DDL & GQL 템플릿 자율 설계 캔버스.
    - 물리적 RDB 외래키(FK) 및 온톨로지 에지(Edge) 네트워크 다이어그램 렌더링.
 
 4. **🎙️ 4. Ingestion & Interview Feedback (지식 주입 및 피드백)**:
    - 비정형 PDF 업무 문서 및 인터뷰/CS 음성 텍스트 자동 3계층 위키 해체 주입기.
+   - **[EPIC-003] Wiki & Unstructured Document OKF Transpiler**: 마스터 명세 문서(`prod.md` 등)를 OKF v0.2 스펙 마크다운으로 변환하고, 헤딩 hierarchy(`#`, `##`, `###`) 기반 아토믹 청킹 분할, 문서간 위키 백링크(`[[Entity]]`) visualizer, 및 주요 업무 규칙(`type: BusinessConcept`) 추출 패널 제공.
    - 현업 예외 규칙 수기 주입 및 위키 지식베이스 실시간 갱신 도구.
 
 5. **📊 5. Provenance & Tokenomics**:
@@ -85,9 +87,41 @@
      - 이전 버전 대비 이번 프로세스/액션(Enrichment, Verification 등)에서 실제로 추가·보강된 라인만 정확하게 에메랄드 그린(`+`, `#064e3b` 배경, `#6ee7b7` 텍스트, `borderLeft: 3px solid #10b981`)으로 강조 표시.
      - 이전 버전이 없거나 변경점이 없는 경우 정상 RAW 소스코드(`#cbd5e1`)로 렌더링(전체 녹색 표시 방지).
 
+4. **OKF v0.2 신뢰 등급 및 유효기간(stale_after) UI 표준 (TASK-008 UI Mapping)**:
+   - **신뢰 등급 배지 (Trust Tier Badges)**:
+     - `Unverified`: 회색 테두리 (`border: 1px solid #94a3b8`, `bg: #f8fafc`, `text: #64748b`)
+     - `Machine-Confirmed`: 보라색 테두리 (`border: 1px solid #c084fc`, `bg: #faf5ff`, `text: #9333ea`)
+     - `Human-Reviewed`: 에메랄드 녹색 (`border: 1px solid #6ee7b7`, `bg: #ecfdf5`, `text: #047857`)
+   - **유효기간 카운트다운 (Freshness D-Day Indicator)**:
+     - `D-30 이상`: 초록색 알약 배지 (`#ecfdf5` / `#059669`)
+     - `D-30 이내`: 주황색 임박 알약 배지 (`#fffbeb` / `#d97706`)
+     - `기한 만료`: 적색 경고 알약 배지 (`#fef2f2` / `#dc2626`, `⚠️ Re-certification Needed`)
+   - **인라인 유효기간 선택 컨트롤 바 & 1-Click 컴팩트 승인 UI (Inline Approval UI)**:
+     - 인라인 라디오 컨트롤: `[ 📅 유효기간: (•) 1년 | ( ) 3년 | ( ) 무기한 | ( ) 직접지정 ]`
+     - 단일 1-Click 승인 버튼: Primary Emerald Blue (`#2563eb` ➔ `#059669` Verified 승격)
+     - 불필요한 `🛡️ OKF 적합성 검사` 및 `⚙️ 설정` 버튼을 삭제하여 깔끔한 단일 승인 인터페이스 제공
+   - **Attestation Receipt 영수증 카드**:
+     - 다크 테마 카드 (`#0f172a`), 상단 에메랄드 상태 칩(`Verdict: OK`), 클릭 시 펼쳐지는 실행 SQL 및 Job ID 서식.
+
 ---
 
-## 4. 📝 디자인 변경 이력 (Design Change Log)
+## 4. ☁️ Dataplex Business Glossary & Aspect 통합 카드 디자인 규격 (TASK-006)
+
+* **카드 위치**: `OKF Knowledge Store` ➔ `Catalog Info` (`activeTab === 'advanced-schema'`) 세부 탭 상단
+* **컨테이너 헤더**: `#1e3a8a` Deep Blue 폰트, ☁️ 아이콘 및 Entry Group (`@bigquery`), Connected Aspects (5개) 둥근 캡슐 배지 적용.
+* **2-Column Grid 카탈로그 카드**:
+  * **Live Push Sync Card**:
+    * 배경: Soft Emerald (`#f0fdf4`), Border (`#bbf7d0`)
+    * 1-Click Push 버튼 (`btn-success`, `#16a34a`), 활성화 텍스트 체크박스 레이아웃.
+  * **Connected Aspect Types Card**:
+    * 배경: Pure White (`#ffffff`), Border (`var(--border-light)`)
+    * Overview, Schema, Governance 3대 Aspect의 실시간 바인딩 상태 리스트 표시.
+* **Physical Schema & Business Glossary Mapping Table**:
+  * Alternating Row Colors (`#ffffff` / `#fafafa`), Monospace 물리 컬럼명 및 Soft Indigo (`#eef2ff`) 비즈니스 용어 매핑 칩.
+
+---
+
+## 5. 📝 디자인 변경 이력 (Design Change Log)
 
 | 일자 | 버전 | 변경 요약 | 반영 문서/컴포넌트 |
 | :--- | :--- | :--- | :--- |
@@ -101,3 +135,8 @@
 | **2026-08-02** | `v3.3.0` | 글로벌 상단 헤더 규격 배지 레이블을 `OKF version 0.2`로 직관적 갱신 | `src/App.jsx`, `DESIGN.md` |
 | **2026-08-02** | `v3.4.0` | 전사 마크다운 뷰어 통일 (화이트 본문, 다크 코드블록, 그린 diff 라인, 3-Mode 토글 탑재) | `src/App.jsx`, `DESIGN.md`, `prod.md` |
 | **2026-08-02** | `v3.5.0` | 뷰어를 [Viewer / RAW Code] 2개 토글로 간소화하고, RAW Code 모드 내 실질 변경분만 자동 Green Diff로 통합 | `src/App.jsx`, `DESIGN.md` |
+| **2026-08-03** | `v3.6.0` | OKF v0.2 신뢰 등급 뱃지, 유효기간 D-Day, 4대 승인 프리셋 및 Attestation 영수증 카드 UI 표준 정의 | `DESIGN.md`, `EPIC-008`, `TASK-008` |
+| **2026-08-04** | `v3.7.0` | OKF Knowledge Store 인라인 유효기간(영구/1년/3년) 선택 버튼 복원 및 승인 팝업 모달 렌더링 수복 | `src/App.jsx`, `SKILL.md`, `DESIGN.md` |
+| **2026-08-04** | `v3.8.0` | OKF Knowledge Store 배너 승인 컨트롤 바 단일 수평 행(flexWrap: nowrap) 정렬 및 Usage Window (영구/1년/3년) 표준 용어 통일 | `src/App.jsx`, `DESIGN.md`, `EPIC-002`, `TASK-002` |
+
+| **2026-08-04** | `v3.9.0` | [EPIC-005] AI 커스텀 프로퍼티 그래프 자율 합성기 (지식 전수 수집 ➔ DDL & GQL 템플릿 ➔ 원클릭 BQ 배포) UI 디자인 적용 | `src/App.jsx`, `src/server.js`, `DESIGN.md` |

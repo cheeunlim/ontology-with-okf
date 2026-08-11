@@ -2,7 +2,7 @@
 
 본 문서는 **OKF Omni (Enterprise Ontology Integration Platform)**의 **전체 프로젝트 단일 진실 소스(Single Source of Truth, SSOT)**이자 모든 요구사항의 최상위 마스터 명세서입니다.
 
-최신 **Google Cloud Open Knowledge Format (OKF v0.2)** 공식 릴리즈([`references/knowledge-catalog/okf/SPEC.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/references/knowledge-catalog/okf/SPEC.md)) 규격이 반영되어 관리됩니다.
+최신 **Google Cloud Open Knowledge Format (OKF v0.2)** 공식 릴리즈([`references/knowledge-catalog/okf/SPEC.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/references/knowledge-catalog/okf/SPEC.md)) 규격이 반영되어 관리됩니다.
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### 🌟 핵심 가치 & 프로덕션 표준
 1. **정형·비정형 지식 융합 및 보강 (Production Flow)**:
-   - 물리 DB 스키마(BigQuery DDL, Dataplex Scan)와 비정형 비즈니스 문서(약관, CS 가이드라인, 매뉴얼)를 결합하여 테이블 및 컬럼의 OKF 메타데이터를 상호 보강([`EPIC-003`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-003_UNSTRUCTURED_DOC_OKF_ENRICHMENT.md)).
+   - 물리 DB 스키마(BigQuery DDL, Dataplex Scan)와 비정형 비즈니스 문서(약관, CS 가이드라인, 매뉴얼)를 결합하여 테이블 및 컬럼의 OKF 메타데이터를 상호 보강([`EPIC-003`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/03_epics/EPIC-003_WIKI_UNSTRUCTURED_DOC_TRANSPILER.md)).
 2. **OKF v0.2 정형 Provenance & 신뢰 수명주기(Trust Tier & Lifecycle)**:
    - `generated: { by: "reference_agent/gemini-3.5-flash", at: "ISO8601" }`
    - `sources: [{ id, resource, title, author, usage_count, last_modified }]` 및 본문 각주(`[^id]`)
@@ -26,16 +26,18 @@
 5. **자율 수복(Self-Healing) 및 피드백 진화**: 쿼리 실패 시 AI 1회 자동 재시도 복구 루프와 현업 사용자 피드백 기반 위키 지식 영구 강화.
 6. **전사 데이터 거버넌스 연동**: 보강된 OKF v0.2 지식을 GCP Dataplex Universal Catalog(Aspect: `okf-aspect.json`) 및 BigQuery Property Graph로 동기화.
 7. **실험적 R&D 파이프라인의 명확한 분리**:
-   - 카파시(Karpathy)식 3계층 LLM-Wiki 해체/컴파일러 엔진은 독립된 별도 연구 에픽([`EPIC-007`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-007_EXPERIMENTAL_KARPATHY_LLM_WIKI.md))으로 격리하여 탐색하며, 실제 프로덕션 적용 계획은 두지 않습니다.
+   - 카파시(Karpathy)식 3계층 LLM-Wiki 해체/컴파일러 엔진은 독립된 별도 연구 에픽([`EPIC-007`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/documents/05_experimental/EPIC-007_EXPERIMENTAL_KARPATHY_LLM_WIKI.md))으로 격리하여 탐색하며, 실제 프로덕션 적용 계획은 두지 않습니다.
 
 ---
 
 ## 2. 핵심 철학 및 가이드라인 연계 (Core Philosophy Links)
 
 * **🤖 AI 에이전트 개발 철학 & 모델 명세**: [`AGENT.md`](./AGENT.md)
-  * `gemini-3.5-flash` 고정 사용 원칙, 생각의 흐름(Thoughts) 추출, 프롬프트 단일 관리([`srcs/src/prompts/agentPrompts.js`](./srcs/src/prompts/agentPrompts.js)), SQL/GQL 예약어 백틱 표준화, 오류 1회 자동 자율수복 루프.
+  * `gemini-3.5-flash` 고정 사용 원칙, 생각의 흐름(Thoughts) 추출, 프롬프트 에픽별 모듈화 단일 관리([`srcs/src/prompts/`](./srcs/src/prompts/)), SQL/GQL 예약어 백틱 표준화, 오류 1회 자동 자율수복 루프.
 * **🎨 UI/UX 디자인 시스템 & 5대 탭 표준**: [`DESIGN.md`](./DESIGN.md)
   * 글로벌 5대 네비게이션 탭 구조, Rich Aesthetic 컬러 토큰, 컴포넌트 일관성, 다이어그램 시각화 표준, 변경 이력.
+* **🛠️ 마스터 워크플로우 스킬 명세**: [`SKILL.md`](./SKILL.md) & [`skills/`](./skills/)
+  * `/epic-dev` (에픽 지정 태스크 개발), `/local-test` (로컬 헬스체크 & 브라우저 검증), `/cloud-deploy` (GCP Cloud Run 배포), `/github-push` (GitHub 푸시), `/github-ref-update` (외부 깃헙 레퍼런스 최신 갱신).
 * **📚 시스템 아키텍처 명세서**: [`documents/01_architecture/ARCHITECTURE_&_ROADMAP.md`](./documents/01_architecture/ARCHITECTURE_&_ROADMAP.md)
 * **💻 개발자 통합 가이드**: [`documents/02_guidelines/DEVELOPER_GUIDE.md`](./documents/02_guidelines/DEVELOPER_GUIDE.md)
 * **📖 사용자 매뉴얼 & 워크스루**: [`documents/02_guidelines/USER_GUIDE.md`](./documents/02_guidelines/USER_GUIDE.md)
@@ -50,12 +52,14 @@
 | Epic ID | Epic 문서 링크 | Task ID | Task 명세서 링크 | 목표 인도물 및 세부 범위 | 진행 상태 |
 | :--- | :--- | :--- | :--- | :--- | :---: |
 | **`EPIC-001`** | [EPIC-001: Foundation Platform](./documents/03_epics/EPIC-001_FOUNDATION_PLATFORM.md) | **`TASK-001`** | [TASK-001: Foundation Setup](./documents/04_tasks/TASK-001_FOUNDATION_SETUP.md) | 풀스택 프로젝트 아키텍처 (`documents/` / `references/` / `srcs/` 분리) | **Completed** |
-| **`EPIC-002`** | [EPIC-002: BigQuery OKF Harvester](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-002_BIGQUERY_OKF_HARVESTER.md) | **`TASK-002`** | [TASK-002: BigQuery Harvester](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-002_BIGQUERY_OKF_HARVESTER.md) | OKF v0.2 `generated: { by, at }`, `sources`, `status` 메타데이터 자동 변환기 | **Completed** |
-| **`EPIC-003`** | [EPIC-003: Document OKF Enrichment](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-003_UNSTRUCTURED_DOC_OKF_ENRICHMENT.md) | **`TASK-003`** | [TASK-003: Document Enrichment](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-003_UNSTRUCTURED_DOC_OKF_ENRICHMENT.md) | 비정형 문서 기반 BigQuery 물리 테이블 지식 보강(Enrichment) 메인 파이프라인 | **Completed** |
-| **`EPIC-004`** | [EPIC-004: Graph Ontology Builder](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-004_GRAPH_ONTOLOGY_BUILDER.md) | **`TASK-004`** | [TASK-004: Graph Builder](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-004_GRAPH_ONTOLOGY_BUILDER.md) | BigQuery Property Graph DDL 및 OKF 지식 그래프 양방향 결합기 | **Completed** |
-| **`EPIC-005`** | [EPIC-005: Data Agent Semantic Query](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-005_DATA_AGENT_SEMANTIC_QUERY.md) | **`TASK-005`** | [TASK-005: Semantic Query Agent](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-005_DATA_AGENT_SEMANTIC_QUERY.md) | OKF v0.2 `type: Attested Computation` 지원 및 자율수복 에이전트 | **Completed** |
-| **`EPIC-006`** | [EPIC-006: Dataplex Catalog Sync](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-006_DATAPLEX_CATALOG_SYNC.md) | **`TASK-006`** | [TASK-006: Dataplex Sync](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-006_DATAPLEX_CATALOG_SYNC.md) | OKF v0.2 Aspect 스키마(`okf-aspect.json`) 기반 Dataplex 전사 엔트리 푸시 | **Completed** |
-| 🧪 **`EPIC-007`** | [EPIC-007: Experimental Karpathy LLM-Wiki](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/03_epics/EPIC-007_EXPERIMENTAL_KARPATHY_LLM_WIKI.md) | 🧪 **`TASK-007`** | [TASK-007: Experimental LLM-Wiki](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/documents/04_tasks/TASK-007_EXPERIMENTAL_KARPATHY_LLM_WIKI.md) | **[실험적 R&D 전용 / 적용 계획 없음]** Karpathy식 3계층 지식 컴파일러 연구 | 🧪 **Experimental** |
+| **`EPIC-002`** | [EPIC-002: BigQuery Physical Harvester](./documents/03_epics/EPIC-002_BIGQUERY_OKF_HARVESTER.md) | **`TASK-002`** | [TASK-002: BigQuery Harvester](./documents/04_tasks/TASK-002_BIGQUERY_OKF_HARVESTER.md) | BigQuery 물리 스키마/뷰 수집, OKF v0.2 프론트매터 자동 직렬화 및 VIEW 400 에러 예외 처리 | **Completed** |
+| **`EPIC-003`** | [EPIC-003: Wiki & Unstructured Transpiler](./documents/03_epics/EPIC-003_WIKI_UNSTRUCTURED_DOC_TRANSPILER.md) | **`TASK-003`** | [TASK-003: Wiki & Unstructured Transpiler](./documents/04_tasks/TASK-003_WIKI_UNSTRUCTURED_DOC_TRANSPILER.md) | 마스터 위키(`prod.md` 등) 및 PDF 문서의 OKF v0.2 변환, 헤딩 청킹, 양방향 백링크 & 업무 정의 추출 | **Completed** |
+| **`EPIC-004`** | [EPIC-004: Cross-Domain OKF Enrichment](./documents/03_epics/EPIC-004_CROSS_DOMAIN_OKF_ENRICHMENT.md) | **`TASK-004`** | [TASK-004: Cross-Domain OKF Enrichment](./documents/04_tasks/TASK-004_CROSS_DOMAIN_OKF_ENRICHMENT.md) | 비정형 위키 지식과 BigQuery 물리 스키마 간 상호 메타데이터 보강 및 GCS 저장 | **Completed** |
+| **`EPIC-005`** | [EPIC-005: Dataset Graph DB Synthesizer Agent](./documents/03_epics/EPIC-005_DATASET_GRAPH_DB_SYNTHESIZER_AGENT.md) | **`TASK-005`** | [TASK-005: Dataset Graph DB Synthesizer Agent](./documents/04_tasks/TASK-005_DATASET_GRAPH_DB_SYNTHESIZER_AGENT.md) | 데이터셋 OKF, 연결 위키, 빈출 SQL 삼중 분석 기반 BigQuery Property Graph DDL & GQL 템플릿 자율 설계 및 BQ/GCS 배포 | **Completed** |
+| **`EPIC-006`** | [EPIC-006: Data Agent Semantic Query](./documents/03_epics/EPIC-006_DATA_AGENT_SEMANTIC_QUERY.md) | **`TASK-006`** | [TASK-006: Semantic Query Agent](./documents/04_tasks/TASK-006_DATA_AGENT_SEMANTIC_QUERY.md) | 하이브리드(SQL/GQL) 질의 처리, Attested Computation, 1회 자동 자율수복 및 4단계 Provenance 리포트 | **Completed** |
+| **`EPIC-007`** | [EPIC-007: OKF v0.2 Conformance Governance](./documents/03_epics/EPIC-007_OKF_V02_CONFORMANCE_GOVERNANCE.md) | **`TASK-007`** | [TASK-007: Conformance Validator & HITL Workflow](./documents/04_tasks/TASK-007_OKF_V02_CONFORMANCE_GOVERNANCE.md) | OKF v0.2 적합성 린터, 4대 유효기간 프리셋, 디지털 승약 서명 및 Attestation 영수증 검증 | **Completed** |
+| **`EPIC-008`** | [EPIC-008: GCP Dataplex Catalog Sync](./documents/03_epics/EPIC-008_DATAPLEX_CATALOG_SYNC.md) | **`TASK-008`** | [TASK-008: Dataplex Catalog Sync](./documents/04_tasks/TASK-008_DATAPLEX_CATALOG_SYNC.md) | OKF v0.2 Aspect 기반 GCP Dataplex Universal Catalog Live Sync & Business Glossary Native 매핑 | **Completed** |
+| 🧪 **`EPIC-009-EXP`** | [EPIC-009-EXP: Experimental Karpathy LLM-Wiki](./documents/05_experimental/EPIC-009_EXPERIMENTAL_KARPATHY_LLM_WIKI.md) | 🧪 **`TASK-009-EXP`** | [TASK-009-EXP: Experimental LLM-Wiki](./documents/05_experimental/TASK-009_EXPERIMENTAL_KARPATHY_LLM_WIKI.md) | **[실험적 R&D 전용 / 05_experimental/ 보관]** Karpathy식 3계층 지식 컴파일러 연구 | 🧪 **Experimental** |
 
 ---
 
@@ -67,9 +71,9 @@
    - 단위 기능 추가, 수정, 리팩토링, 검증은 해당하는 `documents/03_epics/EPIC-xxx.md` 및 `documents/04_tasks/TASK-xxx.md`를 중심으로 소통하고 개발을 진행합니다.
 3. **교차 에픽 영향 및 상위 전파 (Ripple-Up Policy)**:
    - 만약 특정 Epic의 변경 요구사항이 다른 Epic에 영향을 주거나 프로젝트 전반의 기술 사양/디자인을 변경해야 하는 경우:
-     - **AI/모델/추론/프롬프트 영향**: [`AGENT.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/AGENT.md)로 자동 확산 업데이트.
-     - **UI/UX/화면/네비게이션 영향**: [`DESIGN.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/DESIGN.md)로 자동 확산 업데이트.
-     - **전체 아키텍처/마스터 현황 영향**: [`prod.md`](file:///Users/seanjung/.gemini/jetski/scratch/ontology-with-okf/prod.md)로 자동 확산 갱신.
+     - **AI/모델/추론/프롬프트 영향**: [`AGENT.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/AGENT.md)로 자동 확산 업데이트.
+     - **UI/UX/화면/네비게이션 영향**: [`DESIGN.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/DESIGN.md)로 자동 확산 업데이트.
+     - **전체 아키텍처/마스터 현황 영향**: [`prod.md`](file:///Users/seanjung/.gemini/antigravity-demo-archive/antigravity-demo-2026-8-2-118/scratch/ontology-with-okf/prod.md)로 자동 확산 갱신.
 
 ---
 

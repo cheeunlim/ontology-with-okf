@@ -53,12 +53,16 @@ OKF Omni는 Enterprise Data & Knowledge를 아우르는 온톨로지 기반 지�
   테이블 간 물리/논리 관계를 이중 백링크 형태로 자동 생성하고 편집할 수 있습니다.
 - **Dataplex Catalog 동기화 (Push)**:
   보강된 OKF 지식을 버튼 한 번으로 Google Dataplex Data Catalog의 Overview/Description Aspect로 반영합니다.
+- **Catalog Info 탭 (Dataplex Business Glossary 통합 카드)**:
+  선택된 물리 테이블의 GCP Dataplex Entry Group(@bigquery) 정보, 연결된 5종 Aspect 타입 현황, 1-Click Live Push Sync 설정 및 물리 스키마와 비즈니스 용어집(Business Glossary) 간의 자동 매핑 표를 한눈에 확인할 수 있습니다.
 
 ---
 
 ### ⚙️ 3. BigQuery & Spanner Graph (프로퍼티 그래프 Visualizer)
 - **Graph DDL 자동 생성**:
   `CREATE PROPERTY GRAPH` 구문을 자동 생성하여 노드(Entity)와 에지(Relationship)의 토폴로지를 시각적 다이어그램으로 조회합니다.
+- **🤖 [EPIC-005] Dataset Graph DB Synthesizer Agent**:
+  데이터셋(Dataset)을 선택하면 데이터셋 내 전체 테이블 OKF, 연결된 위키 문서, 자주 실행되는 SQL 패턴 3가지 지식 소스를 수집·분석하여 데이터셋 최적의 Property Graph DDL 및 GQL 쿼리 템플릿을 1-Click으로 자율 합성합니다.
 - **Graph Explorer**:
   BigQuery 표준 GQL 구문과 함께 인터랙티브 노드-에지 뷰어로 데이터 관계를 탐색합니다.
 
@@ -67,6 +71,8 @@ OKF Omni는 Enterprise Data & Knowledge를 아우르는 온톨로지 기반 지�
 ### 🎙️ 4. Ingestion & Interview Feedback (비정형 해체 & 피드백 주입)
 - **비정형 문서 업로드 & 위키 해체**:
   PDF, 텍스트 형태의 정책/가이드라인 문서를 드래그 앤 드롭으로 업로드하면 AI가 3계층 위키로 자동 분해합니다.
+- **📄 [EPIC-003] Wiki & Unstructured Document OKF Transpiler**:
+  `prod.md`와 같은 전사 마스터 프로젝트 명세서나 비정형/구조화 마크다운 문서를 입력받아 Google Cloud OKF v0.2 표준 프론트매터(YAML)로 변환하고, 문서 목차(#, ##, ###)에 따라 아토믹 OKF 지식 청크로 자동 분할하며, 문서 간 상호 위키 백링크(`[[Entity]]`) 형성 및 주요 업무 전파/안전 규정을 자율 추출합니다.
 - **인터뷰 & CS 음성 캡처 (Autopilot)**:
   현업 담당자와의 인터뷰 녹음이나 대화 내용을 텍스트화하여 온톨로지에 즉각 반영합니다.
 - **현업 예외 규칙 피드백 (Feedback Loop)**:
@@ -125,3 +131,11 @@ sequenceDiagram
 
 - **Q3. 언어를 영어(EN)로 변경하고 싶으면 어떻게 하나요?**
   - **A**: 상단 헤더의 언어 스위치 토글(🇺🇸 EN / 🇰🇷 KO)을 조작하면 최종 Agent 리포트 및 UI가 선택 언어로 자동 도출됩니다.
+
+- **Q4. OKF 신규 스펙(검증 상태, 유효기간, Attested SQL, 정책)은 Dataplex Knowledge Catalog에서 어떻게 관리되나요?**
+  - **A**: Knowledge Catalog에 해당 이름의 전용 Native 필드는 없으나, Dataplex의 **Custom Aspect Type (`okf_governance_aspect`)**을 통해 검증 상태(`validation_status`), 유효기간(`valid_until`), `attested_sql`, 정책(`governance_policy`) 등을 Dataplex Aspect로 부착하여 전사 Native 카탈로그로 통합 관리할 수 있습니다.
+
+- **Q5. 비즈니스 용어집(Business Glossary)을 자동으로 추출하고 GCP Dataplex에 저장하는 절차는 어떻게 되나요?**
+  - **A**: 비정형 문서 및 DB 스키마에서 Gemini AI가 용어와 정의를 자동 추출하여 OKF `02_entities/` 지식층에 1차 생성하고, OKF Omni UI에서 데이터 스튜어드가 승인한 후 **'Dataplex Catalog 동기화(Push)'** 버튼을 눌러 최종 정보를 GCP Dataplex Native Business Glossary(Terms & Asset Links)에 반영 및 영구 보관합니다.
+
+

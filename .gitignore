@@ -12,13 +12,25 @@ lerna-debug.log*
 .env
 .env.*
 *.env
+**/.env
+**/.env.*
+**/*.env
 *key*.json
+**/*key*.json
 credentials*.json
+**/credentials*.json
 service-account*.json
+**/service-account*.json
+service_account*.json
+**/service_account*.json
 *.pem
+**/*.pem
 *.key
+**/*.key
 *.cert
+**/*.cert
 *.p12
+**/*.p12
 
 # Python Virtual Environments & Bytecode
 .venv
@@ -54,4 +66,6 @@ temp/
 **/temp/
 temp_okf_*
 scratch/
+**/scratch/
+srcs/scratch/
 srcs/references/
