@@ -32,18 +32,28 @@ description: 코드 정돈, 템프 파일 청소, Gemini API 키 노출 점검, 
 - `git remote -v` 및 `git branch`를 조회하여 리포지토리 연결 상태를 확인합니다.
 - 프로젝트 표준 구조(`srcs/`, `documents/`, `references/`, `SKILL.md`, `prod.md` 등)의 일관성이 유지되고 있는지 검증합니다.
 
-### Step 5. Git 커밋 및 GitHub Push 실행 (Commit & Push)
-1. 변경 사항 스테이징: `git add .`
-2. 직관적인 커밋 메시지 작성: `git commit -m "feat: [기능 명칭] 및 문서 동기화"`
-3. GitHub 푸시 실행: `git push origin main` (또는 해당 작업 브랜치)
-
-> [!IMPORTANT]
-> **터미널 실행 권한 제한으로 에이전트가 Push 명령을 직접 완료하지 못하는 경우**, 사용자가 터미널에서 즉시 복사하여 실행할 수 있는 명령어 스크립트를 명확히 제시합니다:
-> ```bash
-> git add .
-> git commit -m "feat: [기능 명칭] 및 스킬/문서 동기화"
-> git push origin main
-> ```
+### Step 5. 2단계 브랜치 생성, 커밋, 머지 및 GitHub Push 실행 (2-Step Branch Integration & Push)
+1. **작업 브랜치 생성**: `git checkout -b <branch-name>` (예: `feat/...` 또는 `deploy/...`)
+2. **변경 사항 스테이징 & 커밋**:
+   ```bash
+   git add .
+   git commit -m "feat: [기능 명칭] 및 문서/스킬 동기화"
+   ```
+3. **원격 작업 브랜치 푸시 (Step 1)**:
+   ```bash
+   git push -u origin <branch-name>
+   ```
+4. **main 브랜치 전환 및 머지 커밋 통합 (Step 2)**:
+   ```bash
+   git checkout main
+   git merge --no-ff <branch-name> -m "Merge branch '<branch-name>' into main"
+   ```
+5. **main 브랜치 원격 푸시 완결**:
+   ```bash
+   git push origin main
+   ```
+   > [!NOTE]
+   > `--no-ff`(Non-fast-forward) 머지 커밋을 통해 브랜치 분기 및 통합 이력이 깃 로그에 영구 보존되며, GitHub 상에서 브랜치 간 diff를 언제든 확인할 수 있습니다.
 
 ---
 

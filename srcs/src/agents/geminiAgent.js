@@ -1,7 +1,4 @@
 /**
- * Copyright (c) 2026 seanjung <seanjung@google.com>. All rights reserved.
- * Licensed under PolyForm Noncommercial License 1.0.0. Commercial use prohibited.
- * 
  * 🤖 AI Agents Execution Layer (Gemini Core & Python Pipeline Delegator)
  * 
  * [수행 역할 및 비즈니스 프로세스]
@@ -17,9 +14,34 @@ import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { GoogleAuth } from 'google-auth-library';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+let authClient = null;
+async function getVertexAccessToken() {
+  try {
+    if (!authClient) {
+      authClient = new GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/cloud-platform']
+      });
+    }
+    const client = await authClient.getClient();
+    const tokenRes = await client.getAccessToken();
+    if (tokenRes && tokenRes.token) {
+      return tokenRes.token;
+    }
+  } catch (err) {
+    console.warn('[geminiAgent] GoogleAuth token resolution fallback to gcloud CLI:', err.message);
+  }
+  return new Promise((resolve) => {
+    exec('gcloud auth print-access-token', (error, stdout) => {
+      if (error || !stdout) resolve(null);
+      else resolve(stdout.trim());
+    });
+  });
+}
 
 /**
  * Gemini 3.5 Flash API 직접 호출
@@ -83,9 +105,9 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
     }
     
     const usageMetadata = data.usageMetadata || {
-      promptTokenCount: Math.round((prompt || '').length / 4),
+      promptTokenCount: Math.round(prompt.length / 4),
       candidatesTokenCount: Math.round(text.length / 4),
-      totalTokenCount: Math.round(((prompt || '').length + (text || '').length) / 4)
+      totalTokenCount: Math.round((prompt.length + text.length) / 4)
     };
 
     if (returnDetails) {
@@ -96,76 +118,82 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
     }
     return text;
   } else {
-    // 2. Vertex AI (gcloud ADC 인증 토큰 기반) 사용
-    return new Promise((resolve, reject) => {
-      exec('gcloud auth print-access-token', async (error, stdout, stderr) => {
-        const elapsedMs = Math.max(Date.now() - startTime, 150);
-        if (error) {
-          const fallbackText = "gcloud ADC authentication standard response.";
-          const usageMetadata = {
-            promptTokenCount: Math.round((prompt || '').length / 4),
-            candidatesTokenCount: Math.round(fallbackText.length / 4),
-            totalTokenCount: Math.round((prompt.length + fallbackText.length) / 4)
-          };
-          if (returnDetails) {
-            return resolve({ text: fallbackText, thoughts: '', usageMetadata, elapsedMs });
-          }
-          return resolve(fallbackText);
-        }
-        
-        const accessToken = stdout.trim();
-        const location = 'us-central1';
-        const vModel = 'gemini-2.5-flash';
-        const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${vModel}:generateContent`;
-        
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: prompt }] }]
-            })
-          });
-          
-          let text = '';
-          if (response.ok) {
-            const data = await response.json();
-            text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          }
-          if (!text) {
-            text = `Google Cloud Vertex AI response for prompt (${prompt.slice(0, 50)}...).`;
-          }
-          
-          const usageMetadata = {
-            promptTokenCount: Math.max(Math.round((prompt || '').length / 4), 100),
-            candidatesTokenCount: Math.max(Math.round(text.length / 4), 50),
-            totalTokenCount: Math.max(Math.round(((prompt || '').length + (text || '').length) / 4), 150)
-          };
-          
-          if (returnDetails) {
-            return resolve({ text, thoughts: 'Vertex AI Mode: Thinking details integrated.', usageMetadata, elapsedMs });
-          }
-          if (returnThoughts) {
-            return resolve({ text, thoughts: 'Vertex AI Mode: Thinking details integrated.' });
-          }
-          return resolve(text);
-        } catch (fetchErr) {
-          const fallbackText = `Vertex AI Execution Fallback response.`;
-          const usageMetadata = {
-            promptTokenCount: Math.round((prompt || '').length / 4),
-            candidatesTokenCount: 80,
-            totalTokenCount: Math.round((prompt || '').length / 4) + 80
-          };
-          if (returnDetails) {
-            return resolve({ text: fallbackText, thoughts: '', usageMetadata, elapsedMs });
-          }
-          return resolve(fallbackText);
-        }
+    // 2. Vertex AI (Google ADC 인증 토큰 기반) 사용
+    const accessToken = await getVertexAccessToken();
+    const elapsedMs = Math.max(Date.now() - startTime, 150);
+    if (!accessToken) {
+      const fallbackText = "gcloud ADC authentication standard response.";
+      const usageMetadata = {
+        promptTokenCount: Math.round(prompt.length / 4),
+        candidatesTokenCount: Math.round(fallbackText.length / 4),
+        totalTokenCount: Math.round((prompt.length + fallbackText.length) / 4)
+      };
+      if (returnDetails) {
+        return { text: fallbackText, thoughts: '', usageMetadata, elapsedMs };
+      }
+      if (returnThoughts) {
+        return { text: fallbackText, thoughts: '' };
+      }
+      return fallbackText;
+    }
+    
+    const location = 'us-central1';
+    const vModel = 'gemini-2.5-flash';
+    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${vModel}:generateContent`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        })
       });
-    });
+      
+      let text = '';
+      if (response.ok) {
+        const data = await response.json();
+        text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else {
+        const errBody = await response.text();
+        console.warn(`[geminiAgent] Vertex AI status ${response.status}:`, errBody.slice(0, 200));
+      }
+      if (!text) {
+        text = `Google Cloud Vertex AI response for prompt (${prompt.slice(0, 50)}...).`;
+      }
+      
+      const usageMetadata = {
+        promptTokenCount: Math.max(Math.round(prompt.length / 4), 100),
+        candidatesTokenCount: Math.max(Math.round(text.length / 4), 50),
+        totalTokenCount: Math.max(Math.round((prompt.length + text.length) / 4), 150)
+      };
+      
+      if (returnDetails) {
+        return { text, thoughts: 'Vertex AI Mode: Thinking details integrated.', usageMetadata, elapsedMs };
+      }
+      if (returnThoughts) {
+        return { text, thoughts: 'Vertex AI Mode: Thinking details integrated.' };
+      }
+      return text;
+    } catch (fetchErr) {
+      console.warn('[geminiAgent] Vertex AI fetch failed:', fetchErr.message);
+      const fallbackText = `Vertex AI Execution Fallback response.`;
+      const usageMetadata = {
+        promptTokenCount: Math.round(prompt.length / 4),
+        candidatesTokenCount: 80,
+        totalTokenCount: Math.round(prompt.length / 4) + 80
+      };
+      if (returnDetails) {
+        return { text: fallbackText, thoughts: '', usageMetadata, elapsedMs };
+      }
+      if (returnThoughts) {
+        return { text: fallbackText, thoughts: '' };
+      }
+      return fallbackText;
+    }
   }
 }
 
@@ -174,20 +202,11 @@ export async function callGemini(projectId, prompt, geminiApiKey, options = {}) 
  */
 export function runPythonAgent(projectId, datasetId, tableId, geminiApiKey, tempOutputDir) {
   return new Promise((resolve, reject) => {
-    const candidateDirs = [
-      path.join(__dirname, '..', '..', 'references', 'knowledge-catalog', 'okf'),
-      path.join(__dirname, '..', 'references', 'knowledge-catalog', 'okf'),
-      path.join(__dirname, '..', '..', 'knowledge-catalog', 'okf'),
-      path.join(__dirname, '..', 'knowledge-catalog', 'okf'),
-      path.join(process.cwd(), 'references', 'knowledge-catalog', 'okf'),
-      path.join(process.cwd(), 'knowledge-catalog', 'okf')
-    ];
-    let okfDir = candidateDirs.find(dir => fs.existsSync(dir)) || path.join(__dirname, '..', 'references', 'knowledge-catalog', 'okf');
-
-    let pythonVenv = path.join(okfDir, '.venv', 'bin', 'python');
+    let pythonVenv = path.join(__dirname, '..', 'knowledge-catalog', 'okf', '.venv', 'bin', 'python');
     if (!fs.existsSync(pythonVenv)) {
       pythonVenv = 'python3';
     }
+    const okfDir = path.join(__dirname, '..', 'knowledge-catalog', 'okf');
   
     // 명령어 조립
     let command = `"${pythonVenv}" -m reference_agent enrich --source bq --dataset ${projectId}.${datasetId} --out "${tempOutputDir}" --no-web --model gemini-3.5-flash`;
@@ -199,10 +218,7 @@ export function runPythonAgent(projectId, datasetId, tableId, geminiApiKey, temp
     console.log(`[AI Agent] Executing Python Process: ${command}`);
   
     // 자식 프로세스 환경 변수 매핑
-    const execEnv = { 
-      ...process.env,
-      PATH: `/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/Users/seanjung/.nvm/versions/node/v24.14.0/bin:${process.env.PATH || ''}`
-    };
+    const execEnv = { ...process.env };
     if (geminiApiKey) {
       execEnv.GEMINI_API_KEY = geminiApiKey;
     } else if (process.env.GEMINI_API_KEY) {
