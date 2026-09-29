@@ -1116,6 +1116,8 @@ app.post('/api/kc-spanner/deploy-spanner', async (req, res) => {
     projectId = process.env.GCP_PROJECT_ID || 'okf-graph-demo',
     instanceId = 'okf-spanner-instance',
     databaseId = 'okf-commerce-graph-db',
+    scenarioId = 'orders',
+    appLang = 'kr',
     spannerSchemaDdl = '',
     spannerGraphDdl = '',
     spannerGqlQuery = ''
@@ -1134,16 +1136,86 @@ app.post('/api/kc-spanner/deploy-spanner', async (req, res) => {
     `  --ddl-file=scripts/spanner_schema.ddl`
   ].join('\n');
 
-  let liveGqlResult = { liveSuccess: false };
+  // Step 1: Apply CREATE OR REPLACE PROPERTY GRAPH DDL on live Spanner DB
+  let ddlApplied = false;
+  if (hasPropertyGraph) {
+    const tempDdlPath = path.join(__dirname, `temp_spanner_graph_${Date.now()}.ddl`);
+    try {
+      fs.writeFileSync(tempDdlPath, spannerGraphDdl, 'utf8');
+      const ddlCmd = `gcloud spanner databases ddl update ${databaseId} --instance=${instanceId} --project="${projectId}" --ddl-file="${tempDdlPath}"`;
+      ddlApplied = await new Promise((resolve) => {
+        exec(ddlCmd, { timeout: 15000 }, (err) => {
+          resolve(!err);
+        });
+      });
+    } catch (_) {
+      ddlApplied = false;
+    } finally {
+      if (fs.existsSync(tempDdlPath)) fs.unlinkSync(tempDdlPath);
+    }
+  }
+
+  // Step 2: Execute ISO GQL Query on live Spanner DB and parse returned rows
+  let liveGqlResult = { liveSuccess: false, liveRows: [] };
   if (spannerGqlQuery) {
     const safeSql = spannerGqlQuery.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
     const gqlCmd = `gcloud spanner databases execute-sql ${databaseId} --instance=${instanceId} --project="${projectId}" --sql="${safeSql}" --format=json`;
     liveGqlResult = await new Promise((resolve) => {
-      exec(gqlCmd, { timeout: 10000 }, (err, stdout, stderr) => {
+      exec(gqlCmd, { timeout: 12000 }, (err, stdout, stderr) => {
         if (err) {
-          resolve({ liveSuccess: false, detail: stderr || err.message });
-        } else {
-          resolve({ liveSuccess: true, rawOutput: stdout });
+          resolve({ liveSuccess: false, detail: stderr || err.message, liveRows: [] });
+          return;
+        }
+        try {
+          const parsed = JSON.parse(stdout);
+          const fields = (parsed.metadata?.rowType?.fields || []).map((f) => f.name);
+          const rawRows = parsed.rows || [];
+          const mappedRows = rawRows.map((arr) => {
+            const obj = {};
+            fields.forEach((colName, idx) => {
+              if (colName !== 'graph_path') {
+                obj[colName] = arr[idx];
+              }
+            });
+            // Format into { entity, related, policy_applied, action } for UI table rendering
+            if (scenarioId === 'orders' || obj.customer) {
+              const isManual = obj.decision === 'MANUAL_REVIEW';
+              return {
+                entity: `${obj.customer} (${obj.tier})`,
+                related: obj.order_id,
+                policy_applied: obj.okf_policy,
+                action: isManual
+                  ? (appLang === 'kr' ? '⚠️ 수동 심사 전환 (MANUAL_REVIEW)' : '⚠️ MANUAL_REVIEW')
+                  : (appLang === 'kr' ? '✅ 즉시 환불 승인 (INSTANT_REFUND)' : '✅ INSTANT_REFUND')
+              };
+            }
+            if (scenarioId === 'users' || obj.email) {
+              return {
+                entity: `${obj.email} ($${obj.ltv_amount})`,
+                related: appLang === 'kr' ? '45일+ 미주문 (휴면 위험)' : '45d+ inactive',
+                policy_applied: obj.tier_name,
+                action: `🎁 ${obj.retention_offer}`
+              };
+            }
+            if (scenarioId === 'products' || obj.product_id) {
+              return {
+                entity: `${obj.product_id}`,
+                related: `${obj.hub_name} (qty: ${obj.stock_qty})`,
+                policy_applied: 'LOW_STOCK_SLA_24H',
+                action: `🔄 ${obj.fallback_action} -> ${obj.backup_center_id}`
+              };
+            }
+            const vals = Object.values(obj);
+            return {
+              entity: String(vals[0] || ''),
+              related: String(vals[1] || ''),
+              policy_applied: String(vals[2] || ''),
+              action: String(vals[3] || vals[2] || '')
+            };
+          });
+          resolve({ liveSuccess: true, liveRows: mappedRows });
+        } catch (parseErr) {
+          resolve({ liveSuccess: true, liveRows: [] });
         }
       });
     });
@@ -1152,9 +1224,11 @@ app.post('/api/kc-spanner/deploy-spanner', async (req, res) => {
   return res.json({
     success: true,
     mode: liveGqlResult.liveSuccess ? 'LIVE_GCP_SPANNER' : 'VERIFIED_SIMULATION',
+    ddlApplied,
     validated: hasPrimaryKey && hasPropertyGraph,
     instanceId,
     databaseId,
+    liveRows: liveGqlResult.liveRows || [],
     cliCommand,
     consoleUrl: `https://console.cloud.google.com/spanner/instances/${instanceId}/databases/${databaseId}/details/query?project=${projectId}`,
     deployedAt: new Date().toISOString()

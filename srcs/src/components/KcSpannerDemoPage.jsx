@@ -520,7 +520,9 @@ export default function KcSpannerDemoPage({
   const activeGraphDdl = aiResult?.spannerGraphDdl || scenario.spannerGraphDdl;
   const activeGqlQuery = aiResult?.spannerGqlQuery || scenario.spannerGqlQuery;
   const defaultRows = lang === 'kr' ? scenario.gqlRowsKr : scenario.gqlRowsEn;
-  const activeGqlRows = aiResult?.gqlSampleRows?.length ? aiResult.gqlSampleRows : defaultRows;
+  const activeGqlRows = spannerReceipt?.liveRows?.length
+    ? spannerReceipt.liveRows
+    : (aiResult?.gqlSampleRows?.length ? aiResult.gqlSampleRows : defaultRows);
 
   const activeGovAspect = aiResult?.kcGovernanceAspect || {
     validation_status: 'ATTESTED',
@@ -594,6 +596,7 @@ export default function KcSpannerDemoPage({
         body: JSON.stringify({
           projectId,
           scenarioId: scenario.id,
+          appLang: lang,
           spannerSchemaDdl: activeSchemaDdl,
           spannerGraphDdl: activeGraphDdl,
           spannerGqlQuery: activeGqlQuery
