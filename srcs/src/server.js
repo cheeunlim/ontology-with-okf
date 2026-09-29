@@ -1136,31 +1136,17 @@ app.post('/api/kc-spanner/deploy-spanner', async (req, res) => {
     `  --ddl-file=scripts/spanner_schema.ddl`
   ].join('\n');
 
-  // Step 1: Apply CREATE OR REPLACE PROPERTY GRAPH DDL on live Spanner DB
-  let ddlApplied = false;
-  if (hasPropertyGraph) {
-    const tempDdlPath = path.join(__dirname, `temp_spanner_graph_${Date.now()}.ddl`);
-    try {
-      fs.writeFileSync(tempDdlPath, spannerGraphDdl, 'utf8');
-      const ddlCmd = `gcloud spanner databases ddl update ${databaseId} --instance=${instanceId} --project="${projectId}" --ddl-file="${tempDdlPath}"`;
-      ddlApplied = await new Promise((resolve) => {
-        exec(ddlCmd, { timeout: 15000 }, (err) => {
-          resolve(!err);
-        });
-      });
-    } catch (_) {
-      ddlApplied = false;
-    } finally {
-      if (fs.existsSync(tempDdlPath)) fs.unlinkSync(tempDdlPath);
-    }
-  }
-
-  // Step 2: Execute ISO GQL Query on live Spanner DB and parse returned rows
-  let liveGqlResult = { liveSuccess: false, liveRows: [] };
-  if (spannerGqlQuery) {
-    const safeSql = spannerGqlQuery.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+  // Helper to run GQL query on live Spanner DB and parse returned rows
+  const runLiveSpannerGql = async (rawQuery) => {
+    if (!rawQuery) return { liveSuccess: false, liveRows: [] };
+    // Normalize reserved GQL keyword `path` -> `gpath`
+    const normalizedQuery = rawQuery
+      .replace(/MATCH\s+path\s*=/gi, 'MATCH gpath =')
+      .replace(/TO_JSON\(\s*path\s*\)/gi, 'TO_JSON(gpath)');
+    const safeSql = normalizedQuery.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
     const gqlCmd = `gcloud spanner databases execute-sql ${databaseId} --instance=${instanceId} --project="${projectId}" --sql="${safeSql}" --format=json`;
-    liveGqlResult = await new Promise((resolve) => {
+
+    return new Promise((resolve) => {
       exec(gqlCmd, { timeout: 12000 }, (err, stdout, stderr) => {
         if (err) {
           resolve({ liveSuccess: false, detail: stderr || err.message, liveRows: [] });
@@ -1177,7 +1163,6 @@ app.post('/api/kc-spanner/deploy-spanner', async (req, res) => {
                 obj[colName] = arr[idx];
               }
             });
-            // Format into { entity, related, policy_applied, action } for UI table rendering
             if (scenarioId === 'orders' || obj.customer) {
               const isManual = obj.decision === 'MANUAL_REVIEW';
               return {
@@ -1219,6 +1204,29 @@ app.post('/api/kc-spanner/deploy-spanner', async (req, res) => {
         }
       });
     });
+  };
+
+  // Step 1: Execute ISO GQL Query directly against Spanner (~1.5s)
+  let ddlApplied = true;
+  let liveGqlResult = await runLiveSpannerGql(spannerGqlQuery);
+
+  // Step 2: If query failed because the Property Graph does not exist yet, apply DDL and retry once
+  if (!liveGqlResult.liveSuccess && hasPropertyGraph && /not found/i.test(liveGqlResult.detail || '')) {
+    const tempDdlPath = path.join(__dirname, `temp_spanner_graph_${Date.now()}.ddl`);
+    try {
+      fs.writeFileSync(tempDdlPath, spannerGraphDdl, 'utf8');
+      const ddlCmd = `gcloud spanner databases ddl update ${databaseId} --instance=${instanceId} --project="${projectId}" --ddl-file="${tempDdlPath}"`;
+      ddlApplied = await new Promise((resolve) => {
+        exec(ddlCmd, { timeout: 15000 }, (err) => resolve(!err));
+      });
+      if (ddlApplied) {
+        liveGqlResult = await runLiveSpannerGql(spannerGqlQuery);
+      }
+    } catch (_) {
+      ddlApplied = false;
+    } finally {
+      if (fs.existsSync(tempDdlPath)) fs.unlinkSync(tempDdlPath);
+    }
   }
 
   return res.json({

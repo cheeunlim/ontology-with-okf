@@ -180,10 +180,10 @@ CREATE TABLE RefundPolicies (
       LABEL GOVERNED_BY
   );`,
     spannerGqlQuery: `GRAPH okf_orders_graph
-MATCH path = (u:\`User\`)-[:PLACED]->(o:\`Order\`)-[:GOVERNED_BY]->(p:RefundPolicy)
+MATCH gpath = (u:\`User\`)-[:PLACED]->(o:\`Order\`)-[:GOVERNED_BY]->(p:RefundPolicy)
 WHERE o.status = 'Returned'
 RETURN
-  TO_JSON(path) AS graph_path,
+  TO_JSON(gpath) AS graph_path,
   u.email AS customer,
   u.vip_tier AS tier,
   o.order_id AS order_id,
@@ -319,9 +319,9 @@ CREATE TABLE VipTierRules (
       LABEL GOVERNED_BY
   );`,
     spannerGqlQuery: `GRAPH okf_users_graph
-MATCH path = (u:\`User\`)-[:GOVERNED_BY]->(r:VipTierRule)
+MATCH gpath = (u:\`User\`)-[:GOVERNED_BY]->(r:VipTierRule)
 WHERE u.ltv_amount >= 1500 AND u.last_order_days > 45
-RETURN TO_JSON(path) AS graph_path, u.email, u.ltv_amount, r.tier_name, r.retention_offer
+RETURN TO_JSON(gpath) AS graph_path, u.email, u.ltv_amount, r.tier_name, r.retention_offer
 LIMIT 5;`,
     gqlRowsEn: [
       { entity: 'sarah.connor@io.com ($2,410)', related: '52d inactive', policy_applied: 'VIP_GOLD_CHURN_45D', action: '🎁 Send $50 Retention Voucher' },
@@ -443,9 +443,9 @@ CREATE TABLE FulfillmentSLAs (
       LABEL GOVERNED_BY
   );`,
     spannerGqlQuery: `GRAPH okf_products_graph
-MATCH path = (c:DistCenter)-[:STOCKS]->(p:\`Product\`)-[:GOVERNED_BY]->(s:FulfillmentSLA)
+MATCH gpath = (c:DistCenter)-[:STOCKS]->(p:\`Product\`)-[:GOVERNED_BY]->(s:FulfillmentSLA)
 WHERE p.stock_qty < 5
-RETURN TO_JSON(path) AS graph_path, p.product_id, c.hub_name, p.stock_qty, c.backup_center_id, s.fallback_action
+RETURN TO_JSON(gpath) AS graph_path, p.product_id, c.hub_name, p.stock_qty, c.backup_center_id, s.fallback_action
 LIMIT 5;`,
     gqlRowsEn: [
       { entity: 'SKU-4012 (Outerwear)', related: 'Chicago Hub (qty: 2)', policy_applied: 'LOW_STOCK_SLA_24H', action: '🔄 Reroute -> Memphis Hub' },
