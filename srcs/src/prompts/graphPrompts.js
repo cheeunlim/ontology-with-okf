@@ -168,3 +168,64 @@ ${JSON.stringify(wikiDocs || [], null, 2).slice(0, 2000)}
 ${JSON.stringify(sqlLogs || [], null, 2).slice(0, 1500)}
 `;
 }
+
+/**
+ * [EPIC-010] OKF v0.2 번들 기반 Knowledge Catalog Aspect & Spanner Graph (DDL + ISO GQL) 통합 합성 프롬프트
+ *
+ * @epic EPIC-010 (OKF to Knowledge Catalog & Spanner Graph Pipeline Showcase)
+ * @api POST /api/kc-spanner/synthesize
+ * @param {Object} params
+ * @param {string} params.projectId - GCP 프로젝트 ID
+ * @param {string} params.datasetId - 데이터셋 ID
+ * @param {string} params.scenarioId - 시나리오 식별자 (orders | users | products)
+ * @param {string} params.okfMarkdown - 원본 OKF v0.2 마크다운 문서
+ * @param {string} [params.appLang='en'] - 응답 언어 ('en' | 'kr')
+ * @returns {string} Gemini 프롬프트 문자열
+ */
+export function getKcSpannerSynthesisPrompt({ projectId, datasetId, scenarioId, okfMarkdown, appLang = 'en' }) {
+  const langRule = appLang === 'en'
+    ? 'Write all explanations and rationale in concise English.'
+    : 'SQL/DDL/GQL 코드 및 식별자를 제외한 설명 문구는 한국어(Korean)로 간결하게 작성하십시오.';
+
+  return `You are a Principal Google Cloud Data Governance & Spanner Graph Architect AI (gemini-3.5-flash).
+Analyze the provided OKF v0.2 (Open Knowledge Format) specification for scenario "${scenarioId}" in "${projectId}.${datasetId}" and compile it into:
+1. A Google Cloud Knowledge Catalog (Dataplex Universal Catalog) Aspect payload (overview + okf-governance aspect).
+2. A Google Cloud Spanner Graph schema (Spanner CREATE TABLE with INTERLEAVE IN PARENT + CREATE OR REPLACE PROPERTY GRAPH DDL + ISO GQL query).
+
+Language Rule:
+- ${langRule}
+
+CRITICAL SPANNER GRAPH SYNTAX RULES:
+1. Spanner tables must use PRIMARY KEY (...) and child tables should use INTERLEAVE IN PARENT <ParentTable> ON DELETE CASCADE.
+2. Spanner Property Graph DDL must use:
+   CREATE OR REPLACE PROPERTY GRAPH okf_${scenarioId}_graph
+     NODE TABLES ( ... )
+     EDGE TABLES ( ... );
+3. Spanner GQL queries must start with:
+   GRAPH okf_${scenarioId}_graph
+   MATCH ...
+   RETURN ...
+
+Return JSON ONLY matching this exact schema:
+{
+  "rationale": "1-2 sentence summary of how OKF bridges Knowledge Catalog and Spanner Graph for this domain.",
+  "kcGovernanceAspect": {
+    "validation_status": "ATTESTED",
+    "trust_tier": "Human-Reviewed",
+    "valid_until": "2027-09-29T00:00:00Z",
+    "governance_policy": "Summary of the linked business policy from OKF",
+    "attested_by": "human:data-steward@enterprise.com"
+  },
+  "spannerSchemaDdl": "CREATE TABLE ...",
+  "spannerGraphDdl": "CREATE OR REPLACE PROPERTY GRAPH ...",
+  "spannerGqlQuery": "GRAPH okf_${scenarioId}_graph\\nMATCH ...",
+  "gqlSampleRows": [
+    { "entity": "...", "related": "...", "policy_applied": "...", "action": "..." }
+  ]
+}
+
+OKF v0.2 Source Markdown:
+${(okfMarkdown || '').slice(0, 3500)}
+`;
+}
+

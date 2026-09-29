@@ -60,6 +60,7 @@
 | **`EPIC-007`** | [EPIC-007: OKF v0.2 Conformance Governance](./documents/03_epics/EPIC-007_OKF_V02_CONFORMANCE_GOVERNANCE.md) | **`TASK-007`** | [TASK-007: Conformance Validator & HITL Workflow](./documents/04_tasks/TASK-007_OKF_V02_CONFORMANCE_GOVERNANCE.md) | OKF v0.2 적합성 린터, 4대 유효기간 프리셋, 디지털 승약 서명 및 Attestation 영수증 검증 | **Completed** |
 | **`EPIC-008`** | [EPIC-008: GCP Dataplex Catalog Sync](./documents/03_epics/EPIC-008_DATAPLEX_CATALOG_SYNC.md) | **`TASK-008`** | [TASK-008: Dataplex Catalog Sync](./documents/04_tasks/TASK-008_DATAPLEX_CATALOG_SYNC.md) | OKF v0.2 Aspect 기반 GCP Dataplex Universal Catalog Live Sync & Business Glossary Native 매핑 | **Completed** |
 | 🧪 **`EPIC-009-EXP`** | [EPIC-009-EXP: Experimental Karpathy LLM-Wiki](./documents/05_experimental/EPIC-009_EXPERIMENTAL_KARPATHY_LLM_WIKI.md) | 🧪 **`TASK-009-EXP`** | [TASK-009-EXP: Experimental LLM-Wiki](./documents/05_experimental/TASK-009_EXPERIMENTAL_KARPATHY_LLM_WIKI.md) | **[실험적 R&D 전용 / 05_experimental/ 보관]** Karpathy식 3계층 지식 컴파일러 연구 | 🧪 **Experimental** |
+| **`EPIC-010`** | [EPIC-010: KC & Spanner Graph Showcase](./documents/03_epics/EPIC-010_KC_SPANNER_GRAPH_SHOWCASE.md) | **`TASK-010`** | [TASK-010: KC & Spanner Graph Showcase](./documents/04_tasks/TASK-010_KC_SPANNER_GRAPH_SHOWCASE.md) | 독립 페이지(`/kc-spanner`) 기반 OKF v0.2 ➔ Knowledge Catalog & Spanner Graph 3단 파이프라인 쇼케이스 | **Completed** |
 
 ---
 

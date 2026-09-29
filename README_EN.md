@@ -153,7 +153,16 @@ node server.js
 bash start_server.sh
 ```
 
-- **Open Web Application**: [http://localhost:3003](http://localhost:3003)
+- **Full Platform Studio**: [http://localhost:3003/](http://localhost:3003/)
+- **KC & Spanner Graph Showcase (English)**: [http://localhost:3003/kc-spanner](http://localhost:3003/kc-spanner)
+- **KC & Spanner Graph Showcase (Korean `/ko`)**: [http://localhost:3003/ko](http://localhost:3003/ko)
+
+### Step 5: Bootstrapping a Brand-New Google Cloud Project
+To provision all required APIs, sample BigQuery tables (`thelook_ecommerce`), Property Graph, GCS bucket, and `.env` in a brand-new GCP project with one command:
+```bash
+cd srcs
+bash scripts/setup_new_gcp_project.sh <YOUR_NEW_PROJECT_ID> thelook_ecommerce us-central1
+```
 
 ---
 

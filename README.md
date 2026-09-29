@@ -99,7 +99,7 @@ ontology-with-okf/
 
 ---
 
-## 🚀 로컬 실행 방법 (Quick Start)
+## 🚀 로컬 실행 및 쇼케이스 페이지 접속 (Quick Start & Showcase Routes)
 
 ### 1. 패키지 설치 및 빌드
 ```bash
@@ -117,7 +117,73 @@ node server.js
 # 또는 자동 재기동 샌티널 구동
 bash start_server.sh
 ```
-* **로컬 웹 접속 주소**: [http://localhost:3003/](http://localhost:3003/)
+
+### 3. 주요 접속 URL (Main Studio & Standalone Showcase Pages)
+| 페이지 구분 | 접속 URL | 설명 |
+| :--- | :--- | :--- |
+| 🖥️ **통합 플랫폼 스튜디오 (Main Studio)** | [`http://localhost:3003/`](http://localhost:3003/) | 5대 메인 탭 전체 기능을 포함한 엔터프라이즈 온톨로지 통합 워크스페이스 |
+| 🇰🇷 **Knowledge Catalog & Spanner Graph 쇼케이스 (한국어)** | **[`http://localhost:3003/ko`](http://localhost:3003/ko)** | **OKF v0.2 ➔ Knowledge Catalog (Dataplex) & Spanner Graph** 3단 주입 파이프라인 핵심 요약 데모 페이지 (한국어) |
+| 🇺🇸 **Knowledge Catalog & Spanner Graph Showcase (English)** | **[`http://localhost:3003/kc-spanner`](http://localhost:3003/kc-spanner)** | **OKF v0.2 ➔ Knowledge Catalog & Spanner Graph** 3-column pipeline showcase page (English) |
+
+> 📖 **쇼케이스 페이지(`/ko`, `/kc-spanner`) 상세 시나리오 및 발표 가이드**: **[`README_KC_SPANNER_DEMO.md`](./README_KC_SPANNER_DEMO.md)** 문서를 참고하세요.
+
+---
+
+## ☁️ 신규 Google Cloud 프로젝트 처음부터 구성하기 (New GCP Project Setup Guide)
+
+아예 새로운 본인 소유의 Google Cloud 프로젝트를 생성하여 본 데모를 구동·배포하려면 아래 **자동 부트스트랩 스크립트** 또는 **단계별 설정 절차**를 순서대로 실행하세요.
+
+### 방법 A. 원클릭 자동 부트스트랩 스크립트 실행 (권장)
+```bash
+# 1. gcloud 로그인 및 ADC 인증
+gcloud auth login
+gcloud auth application-default login
+
+# 2. 신규 GCP 프로젝트 초기 구성 스크립트 실행 (API 활성화 + 샘플 BQ 데이터셋 복제 + 프로퍼티 그래프 + GCS 버킷 + .env 생성)
+cd srcs
+bash scripts/setup_new_gcp_project.sh <YOUR_NEW_PROJECT_ID> thelook_ecommerce us-central1
+```
+
+### 방법 B. 수동 단계별 구성 가이드 (Step-by-Step)
+1. **필수 GCP API 활성화**:
+   ```bash
+   gcloud config set project <YOUR_NEW_PROJECT_ID>
+   gcloud services enable \
+     bigquery.googleapis.com \
+     storage.googleapis.com \
+     dataplex.googleapis.com \
+     datacatalog.googleapis.com \
+     spanner.googleapis.com \
+     aiplatform.googleapis.com \
+     run.googleapis.com \
+     cloudbuild.googleapis.com \
+     artifactregistry.googleapis.com
+   ```
+2. **샘플 BigQuery 데이터셋(`thelook_ecommerce`) 생성 및 퍼블릭 데이터 복제**:
+   ```bash
+   bq --location=US mk -d <YOUR_NEW_PROJECT_ID>:thelook_ecommerce
+   for TBL in users orders order_items products events distribution_centers inventory_items; do
+     bq query --use_legacy_sql=false \
+       "CREATE OR REPLACE TABLE \`<YOUR_NEW_PROJECT_ID>.thelook_ecommerce.\${TBL}\` AS SELECT * FROM \`bigquery-public-data.thelook_ecommerce.\${TBL}\` LIMIT 5000;"
+   done
+   ```
+3. **환경변수(`srcs/.env`) 설정**:
+   ```env
+   PORT=3003
+   GCP_PROJECT_ID="<YOUR_NEW_PROJECT_ID>"
+   BIGQUERY_DATASET="thelook_ecommerce"
+   GEMINI_API_KEY="AIzaSy..." # 생략 시 gcloud ADC (Vertex AI) 자동 폴백
+   ```
+4. **(선택) 본인 프로젝트의 Cloud Run으로 서버 배포**:
+   ```bash
+   cd srcs
+   gcloud run deploy okf-omni \
+     --source . \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --memory 2Gi --cpu 2 \
+     --set-env-vars GCP_PROJECT_ID="<YOUR_NEW_PROJECT_ID>",BIGQUERY_DATASET="thelook_ecommerce",GEMINI_API_KEY="<YOUR_KEY>"
+   ```
 
 ---
 

@@ -514,3 +514,7 @@ Write a complete Markdown response in Korean incorporating this feedback.
 `;
 }
 
+export { getDatasetGraphSynthesizerPrompt, getKcSpannerSynthesisPrompt } from './graphPrompts.js';
+
+
+

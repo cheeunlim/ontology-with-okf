@@ -1,0 +1,64 @@
+{
+  "name": "OkfGovernance",
+  "type": "record",
+  "annotations": {
+    "displayName": "OKF v0.2 Governance Aspect",
+    "description": "Open Knowledge Format (OKF v0.2) AI & Data Governance Attestation Metadata"
+  },
+  "recordFields": [
+    {
+      "index": 1,
+      "name": "validation_status",
+      "type": "string",
+      "annotations": {
+        "displayName": "Validation Status",
+        "description": "OKF Governance Validation State (e.g. ATTESTED, DRAFT)"
+      }
+    },
+    {
+      "index": 2,
+      "name": "trust_tier",
+      "type": "string",
+      "annotations": {
+        "displayName": "Trust Tier",
+        "description": "Data Steward Trust Tier (e.g. Human-Reviewed, Tier-1 Certified)"
+      }
+    },
+    {
+      "index": 3,
+      "name": "valid_until",
+      "type": "string",
+      "annotations": {
+        "displayName": "Valid Until",
+        "description": "Expiration timestamp for the OKF governance attestation"
+      }
+    },
+    {
+      "index": 4,
+      "name": "governance_policy",
+      "type": "string",
+      "annotations": {
+        "displayName": "Governance Policy",
+        "description": "Linked OKF Business Policy rule identifier"
+      }
+    },
+    {
+      "index": 5,
+      "name": "attested_by",
+      "type": "string",
+      "annotations": {
+        "displayName": "Attested By",
+        "description": "Principal or steward who attested this OKF specification"
+      }
+    },
+    {
+      "index": 6,
+      "name": "attested_sql",
+      "type": "string",
+      "annotations": {
+        "displayName": "Attested SQL Rule",
+        "description": "Canonical SQL metric/filter enforced by OKF v0.2"
+      }
+    }
+  ]
+}

@@ -4486,6 +4486,34 @@ PG사 A의 게이트웨이 타임아웃으로 인해 주문 테이블(orders)의
           </div>
 
           <button
+            id="open-kc-spanner-demo-btn"
+            onClick={() => {
+              const targetPath = appLang === 'kr' ? '/ko' : '/kc-spanner';
+              window.history.pushState({}, '', targetPath);
+              window.dispatchEvent(new Event('okf:navigate'));
+            }}
+            title="Open standalone Knowledge Catalog & Spanner Graph Showcase Page (/ko or /kc-spanner)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              padding: '6px 13px',
+              fontWeight: '700',
+              backgroundColor: '#eff6ff',
+              color: '#0b57d0',
+              border: '1px solid #bfdbfe',
+              borderRadius: '20px',
+              boxShadow: '0 1px 3px rgba(11,87,208,0.08)',
+              cursor: 'pointer'
+            }}
+          >
+            <span>🕸️</span>
+            <span>{appLang === 'en' ? 'KC & Spanner Demo' : 'KC & Spanner 데모 (/ko)'}</span>
+            <span>↗</span>
+          </button>
+
+          <button
             className="btn-secondary"
             onClick={() => setIsGuideModalOpen(true)}
             title="Open OKF Ontology Generation & Enrichment Pipeline Guide"

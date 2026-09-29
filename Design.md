@@ -138,5 +138,5 @@
 | **2026-08-03** | `v3.6.0` | OKF v0.2 신뢰 등급 뱃지, 유효기간 D-Day, 4대 승인 프리셋 및 Attestation 영수증 카드 UI 표준 정의 | `DESIGN.md`, `EPIC-008`, `TASK-008` |
 | **2026-08-04** | `v3.7.0` | OKF Knowledge Store 인라인 유효기간(영구/1년/3년) 선택 버튼 복원 및 승인 팝업 모달 렌더링 수복 | `src/App.jsx`, `SKILL.md`, `DESIGN.md` |
 | **2026-08-04** | `v3.8.0` | OKF Knowledge Store 배너 승인 컨트롤 바 단일 수평 행(flexWrap: nowrap) 정렬 및 Usage Window (영구/1년/3년) 표준 용어 통일 | `src/App.jsx`, `DESIGN.md`, `EPIC-002`, `TASK-002` |
-
 | **2026-08-04** | `v3.9.0` | [EPIC-005] AI 커스텀 프로퍼티 그래프 자율 합성기 (지식 전수 수집 ➔ DDL & GQL 템플릿 ➔ 원클릭 BQ 배포) UI 디자인 적용 | `src/App.jsx`, `src/server.js`, `DESIGN.md` |
+| **2026-09-29** | `v4.0.0` | [EPIC-010] 독립 쇼케이스 페이지 (`/kc-spanner`) 3단 미니멀 파이프라인 UI (OKF v0.2 ➔ Knowledge Catalog & Spanner Graph) 추가 | `src/components/KcSpannerDemoPage.jsx`, `src/main.jsx`, `DESIGN.md` |
